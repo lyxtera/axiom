@@ -1,9 +1,8 @@
 package {0}.actions;
 
-import com.lyxtera.axiom.annotations.Arg;
-import com.lyxtera.axiom.annotations.RuleMetadata;
-import com.lyxtera.axiom.core.BusinessAction;
-import com.lyxtera.axiom.core.ContextKey;
+import com.lyxtera.axiom.config.Arg;
+import com.lyxtera.axiom.config.RuleMetadata;
+import com.lyxtera.axiom.api.model.BusinessAction;
 
 /**
  * {1}
@@ -12,14 +11,13 @@ import com.lyxtera.axiom.core.ContextKey;
     name = "{2}",
     description = "{3}"
 )
-public class {4} implements BusinessAction<ContextKey> {
+public class {4} implements BusinessAction<YourContextKey> {
 
     /**
      * Execute the business action.
      * 
      */
-    @Override
-    public void execute({6}) {
+    public Value execute({6}) {
         // TODO: Implement the action logic
         throw new UnsupportedOperationException("Not implemented yet");
     }

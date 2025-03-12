@@ -1,8 +1,7 @@
 package com.lyxtera.axiom.api.parser;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
@@ -103,9 +102,11 @@ public class OutcomeVisitorTest {
         List<RuleFunction<TestKey>> result = visitor.visitBusinessActionList(ctx);
         
         // Verify the result
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals("notify", result.get(0).getName());
+        assertThat(result)
+            .isNotNull()
+            .hasSize(1)
+            .extracting(RuleFunction::getName)
+            .containsExactly("notify");
     }
     
     @Test
@@ -135,10 +136,11 @@ public class OutcomeVisitorTest {
         List<RuleFunction<TestKey>> result = visitor.visitBusinessActionList(ctx);
         
         // Verify the result
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertEquals("notify", result.get(0).getName());
-        assertEquals("log", result.get(1).getName());
+        assertThat(result)
+            .isNotNull()
+            .hasSize(2)
+            .extracting(RuleFunction::getName)
+            .containsExactly("notify", "log");
     }
     
     @Test
@@ -172,9 +174,11 @@ public class OutcomeVisitorTest {
         List<RuleFunction<TestKey>> result = visitor.visitBusinessActionList(ctx);
         
         // Verify the result
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals("notify", result.get(0).getName());
+        assertThat(result)
+            .isNotNull()
+            .hasSize(1)
+            .extracting(RuleFunction::getName)
+            .containsExactly("notify");
     }
     
     @Test
@@ -208,9 +212,11 @@ public class OutcomeVisitorTest {
         List<RuleFunction<TestKey>> result = visitor.visitBusinessActionList(ctx);
         
         // Verify the result
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals("log", result.get(0).getName());
+        assertThat(result)
+            .isNotNull()
+            .hasSize(1)
+            .extracting(RuleFunction::getName)
+            .containsExactly("log");
     }
     
     @Test
@@ -230,9 +236,8 @@ public class OutcomeVisitorTest {
         when(identifierNode.getText()).thenReturn("unknown");
         
         // Verify that an RuleParserException is thrown
-        assertThrows(RuleParserException.class, () -> {
-            visitor.visitBusinessActionList(ctx);
-        });
+        assertThatThrownBy(() -> visitor.visitBusinessActionList(ctx))
+            .isInstanceOf(RuleParserException.class);
     }
 
     @Test

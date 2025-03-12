@@ -1,23 +1,18 @@
 package com.lyxtera.axiom.codegen;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lyxtera.axiom.api.model.RuleSetDescriptor;
 import com.lyxtera.axiom.api.model.RuleSetDescriptor.BusinessActionDescriptor;
 import com.lyxtera.axiom.api.model.RuleSetDescriptor.BusinessCheckDescriptor;
@@ -60,52 +55,20 @@ public class RuleStubGenerator {
      *
      * @return The number of files generated
      * @throws IOException If an error occurs while writing files
+     * @throws URISyntaxException If an error occurs while loading resources
      */
-    public int generateStubs() throws IOException {
+    public int generateStubs() throws IOException, URISyntaxException {
         int totalFilesGenerated = 0;
         
         for (String ruleSetPath : ruleSetPaths) {
-            RuleSetDescriptor descriptor;
-            // Check if the path is a file that exists on the filesystem
-            if (Files.exists(Paths.get(ruleSetPath))) {
-                descriptor = loadRuleSetFromFile(ruleSetPath);
-            } else {
-                // Fall back to loading from classpath
-                descriptor = new YamlRuleSetLoader<>(ruleSetPath).loadDescriptor();
-            }
+            RuleSetDescriptor descriptor = new YamlRuleSetLoader<>(ruleSetPath).loadDescriptor();
             totalFilesGenerated += generateStubsForRuleSet(descriptor);
         }
         
         return totalFilesGenerated;
     }
-    
-    /**
-     * Loads a RuleSetDescriptor from a file on the filesystem.
-     * 
-     * @param ruleSetPath The path to the YAML file
-     * @return The loaded RuleSetDescriptor
-     * @throws IOException If an error occurs while reading the file
-     */
-    private RuleSetDescriptor loadRuleSetFromFile(String ruleSetPath) throws IOException {
-        try {
-            ObjectMapper mapper = new ObjectMapper(new com.fasterxml.jackson.dataformat.yaml.YAMLFactory())
-                .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())
-                .configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-            
-            return mapper.readValue(new File(ruleSetPath), RuleSetDescriptor.class);
-        } catch (Exception e) {
-            throw new IOException("Failed to load ruleset from " + ruleSetPath, e);
-        }
-    }
-    
-    /**
-     * Generates stub files for a parsed rule set.
-     * 
-     * @param descriptor the rule set descriptor
-     * @return the number of files generated
-     * @throws IOException if an I/O error occurs
-     */
-    private int generateStubsForRuleSet(RuleSetDescriptor descriptor) throws IOException {
+
+    private int generateStubsForRuleSet(RuleSetDescriptor descriptor) throws IOException, URISyntaxException {
         int filesGenerated = 0;
         
         // Create directory structure
@@ -146,11 +109,8 @@ public class RuleStubGenerator {
     private boolean shouldGenerateFile(Path filePath) {
         return overwriteExisting || !Files.exists(filePath);
     }
-    
-    /**
-     * Generates a Java stub file for a business check.
-     */
-    private void generateCheckStub(Path filePath, BusinessCheckDescriptor check) throws IOException {
+
+    private void generateCheckStub(Path filePath, BusinessCheckDescriptor check) throws IOException, URISyntaxException {
         String template = loadTemplateResource(CHECK_TEMPLATE_PATH);
         
         String className = toClassName(check.getName()) + "Check";
@@ -175,10 +135,8 @@ public class RuleStubGenerator {
         Files.writeString(filePath, content);
     }
     
-    /**
-     * Generates a Java stub file for a business action.
-     */
-    private void generateActionStub(Path filePath, BusinessActionDescriptor action) throws IOException {
+
+    private void generateActionStub(Path filePath, BusinessActionDescriptor action) throws IOException, URISyntaxException {
         String template = loadTemplateResource(ACTION_TEMPLATE_PATH);
         
         String className = toClassName(action.getName()) + "Action";
@@ -207,18 +165,9 @@ public class RuleStubGenerator {
      * Loads a template from a resource file.
      * @return The template content or null if the file cannot be found or read
      */
-    private String loadTemplateResource(String templatePath) {
-        try {
-            InputStream is = getClass().getClassLoader().getResourceAsStream(templatePath);
-            if (is != null) {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
-                    return reader.lines().collect(Collectors.joining("\n"));
-                }
-            }
-        } catch (IOException e) {
-            LOGGER.error("Failed to load template: {} - {}", templatePath, e.getMessage());
-        }
-        return null;
+    private String loadTemplateResource(String templatePath) throws IOException, URISyntaxException {
+        Path path = Path.of(getClass().getClassLoader().getResource(templatePath).toURI());
+        return Files.readString(path);
     }
     
     /**
@@ -264,7 +213,7 @@ public class RuleStubGenerator {
         if (params != null && !params.isEmpty()) {
             for (String param : params) {
                 sb.append(", ");
-                sb.append("@Arg(\"").append(param).append("\") Object ");
+                sb.append("@Arg(\"").append(param).append("\") Value ");
                 sb.append(toCamelCase(param));
             }
         }
@@ -413,49 +362,6 @@ public class RuleStubGenerator {
         }
     }
     
-    /**
-     * Main method for use with exec-maven-plugin or command line execution.
-     * 
-     * Usage with exec-maven-plugin:
-     * <pre>
-     * &lt;plugin&gt;
-     *   &lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
-     *   &lt;artifactId&gt;exec-maven-plugin&lt;/artifactId&gt;
-     *   &lt;version&gt;3.1.0&lt;/version&gt;
-     *   &lt;executions&gt;
-     *     &lt;execution&gt;
-     *       &lt;id&gt;generate-rule-stubs&lt;/id&gt;
-     *       &lt;phase&gt;generate-sources&lt;/phase&gt;
-     *       &lt;goals&gt;
-     *         &lt;goal&gt;java&lt;/goal&gt;
-     *       &lt;/goals&gt;
-     *       &lt;configuration&gt;
-     *         &lt;mainClass&gt;com.lyxtera.axiom.codegen.RuleStubGenerator&lt;/mainClass&gt;
-     *         &lt;arguments&gt;
-     *           &lt;argument&gt;--basePackage=com.example.rules&lt;/argument&gt;
-     *           &lt;argument&gt;--outputDirectory=src/main/java&lt;/argument&gt;
-     *           &lt;argument&gt;--ruleSet=src/main/resources/rule-set1.yaml&lt;/argument&gt;
-     *           &lt;argument&gt;--ruleSet=src/main/resources/rule-set2.yaml&lt;/argument&gt;
-     *           &lt;argument&gt;--overwriteExisting=true&lt;/argument&gt;
-     *         &lt;/arguments&gt;
-     *       &lt;/configuration&gt;
-     *     &lt;/execution&gt;
-     *   &lt;/executions&gt;
-     * &lt;/plugin&gt;
-     * </pre>
-     * 
-     * Command-line usage:
-     * <pre>
-     * java -cp ... com.lyxtera.axiom.codegen.RuleStubGenerator \
-     *   --basePackage=com.example.rules \
-     *   --outputDirectory=src/main/java \
-     *   --ruleSet=src/main/resources/rule-set1.yaml \
-     *   --ruleSet=src/main/resources/rule-set2.yaml \
-     *   --overwriteExisting=true
-     * </pre>
-     * 
-     * @param args Command line arguments
-     */
     public static void main(String[] args) {
         String basePackage = null;
         String outputDirectory = "src/main/java";

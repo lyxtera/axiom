@@ -1,7 +1,6 @@
 package com.lyxtera.axiom.engine;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import java.time.ZonedDateTime;
@@ -47,10 +46,9 @@ public class RuleSetTest {
         List<BusinessRule<TestKey>> rules = ruleSet.getRulesInPriorityOrder();
         
         // Verify rules are in correct order (lowest priority number first)
-        assertEquals(3, rules.size());
-        assertEquals(rule2, rules.get(0));
-        assertEquals(rule1, rules.get(1));
-        assertEquals(rule3, rules.get(2));
+        assertThat(rules)
+            .hasSize(3)
+            .containsExactly(rule2, rule1, rule3);
     }
     
     @Test
@@ -64,9 +62,9 @@ public class RuleSetTest {
         List<BusinessRule<TestKey>> rules = ruleSet.getRulesInPriorityOrder();
         
         // Verify only active rules are included
-        assertEquals(2, rules.size());
-        assertTrue(rules.contains(rule1));
-        assertTrue(rules.contains(rule3));
+        assertThat(rules)
+            .hasSize(2)
+            .contains(rule1, rule3);
     }
     
     @Test
@@ -80,9 +78,9 @@ public class RuleSetTest {
         List<BusinessRule<TestKey>> rules = ruleSet.getRulesInPriorityOrder();
         
         // Verify only active rules are included
-        assertEquals(2, rules.size());
-        assertTrue(rules.contains(rule1));
-        assertTrue(rules.contains(rule3));
+        assertThat(rules)
+            .hasSize(2)
+            .contains(rule1, rule3);
     }
     
     @Test
@@ -103,7 +101,8 @@ public class RuleSetTest {
         List<BusinessRule<TestKey>> rules = ruleSet.getRulesInPriorityOrder();
         
         // Verify only currently active rules are included
-        assertEquals(1, rules.size());
-        assertEquals(rule1, rules.get(0));
+        assertThat(rules)
+            .hasSize(1)
+            .containsExactly(rule1);
     }
 } 

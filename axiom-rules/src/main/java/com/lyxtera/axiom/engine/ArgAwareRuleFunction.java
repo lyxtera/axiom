@@ -1,5 +1,6 @@
 package com.lyxtera.axiom.engine;
 
+import static com.lyxtera.axiom.api.exception.AxiomEngineException.MSG_METHOD_HANDLE_ERROR;
 import static java.lang.String.format;
 import static java.lang.String.join;
 import static java.util.Collections.nCopies;
@@ -12,16 +13,13 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import com.lyxtera.axiom.api.exception.RuleFunctionException;
 import com.lyxtera.axiom.api.model.BusinessAction;
 import com.lyxtera.axiom.api.model.BusinessCheck;
 import com.lyxtera.axiom.api.model.RuleFunction;
 import com.lyxtera.axiom.api.model.RuleSetDescriptor.BusinessActionDescriptor;
 import com.lyxtera.axiom.api.model.RuleSetDescriptor.BusinessCheckDescriptor;
 import com.lyxtera.axiom.api.model.Value;
-import com.lyxtera.axiom.api.exception.RuleFunctionException;
-import com.lyxtera.axiom.config.Arg;
-import static com.lyxtera.axiom.api.exception.AxiomEngineException.MSG_METHOD_HANDLE_ERROR;
-import static com.lyxtera.axiom.api.exception.AxiomEngineException.MSG_FUNCTION_EXECUTION_ERROR;
 
 /**
  * A decorator for RuleFunction that handles passing arguments to the delegate's
@@ -142,7 +140,7 @@ public final class ArgAwareRuleFunction<K extends Enum<K>> implements RuleFuncti
                         message.append("Expected ").append(descriptor.getParams().size());
                         message.append(" but got ").append(args.size());
 
-                        if (descriptor.getParams().size() > 0) {
+                        if (!descriptor.getParams().isEmpty()) {
                             message.append("\nExpected parameter names: ")
                                     .append(join(", ", descriptor.getParams()));
                         }
@@ -165,9 +163,9 @@ public final class ArgAwareRuleFunction<K extends Enum<K>> implements RuleFuncti
                         message.append("Expected ").append(descriptor.getParams().size());
                         message.append(" but got ").append(args.size());
 
-                        if (descriptor.getParams().size() > 0) {
+                        if (!descriptor.getParams().isEmpty()) {
                             message.append("\nExpected parameter names: ")
-                            .append(join(", ", descriptor.getParams()));
+                                .append(join(", ", descriptor.getParams()));
                     }
                 }
             }

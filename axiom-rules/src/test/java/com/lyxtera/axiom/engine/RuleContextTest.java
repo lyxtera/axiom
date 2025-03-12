@@ -1,9 +1,7 @@
 package com.lyxtera.axiom.engine;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.Optional;
 
@@ -33,27 +31,35 @@ public class RuleContextTest {
 
     @Test
     public void testConstructor() {
-        assertTrue(context.isEmpty());
+        assertThat(context.isEmpty()).isTrue();
     }
 
     @Test
     public void testAddAndGet() {
         // Add and get a string value
         context.add(TestKey.STRING_KEY, "test");
-        assertEquals("test", context.get(TestKey.STRING_KEY, String.class).get());
+        assertThat(context.get(TestKey.STRING_KEY, String.class))
+            .isPresent()
+            .hasValue("test");
         
         // Add and get an integer value
         context.add(TestKey.INTEGER_KEY, 123);
-        assertEquals(123, context.get(TestKey.INTEGER_KEY, Integer.class).get());
+        assertThat(context.get(TestKey.INTEGER_KEY, Integer.class))
+            .isPresent()
+            .hasValue(123);
         
         // Add and get a boolean value
         context.add(TestKey.BOOLEAN_KEY, true);
-        assertEquals(true, context.get(TestKey.BOOLEAN_KEY, Boolean.class).get());
+        assertThat(context.get(TestKey.BOOLEAN_KEY, Boolean.class))
+            .isPresent()
+            .hasValue(true);
         
         // Add and get a complex object
         Object obj = new Object();
         context.add(TestKey.OBJECT_KEY, obj);
-        assertEquals(obj, context.get(TestKey.OBJECT_KEY, Object.class).get());
+        assertThat(context.get(TestKey.OBJECT_KEY, Object.class))
+            .isPresent()
+            .hasValue(obj);
     }
 
     @Test
@@ -62,41 +68,43 @@ public class RuleContextTest {
         context.add(TestKey.STRING_KEY, "test");
         
         // Get required value when it exists
-        assertEquals("test", context.getRequired(TestKey.STRING_KEY, String.class));
+        assertThat(context.getRequired(TestKey.STRING_KEY, String.class))
+            .isEqualTo("test");
         
         // Get required value when it doesn't exist
-        assertThrows(ContextException.class, () -> context.getRequired(TestKey.INTEGER_KEY, Integer.class));
+        assertThatThrownBy(() -> context.getRequired(TestKey.INTEGER_KEY, Integer.class))
+            .isInstanceOf(ContextException.class);
     }
 
     @Test
     public void testGetWithNonExistentKey() {
         Optional<String> result = context.get(TestKey.STRING_KEY, String.class);
-        assertFalse(result.isPresent());
+        assertThat(result).isEmpty();
     }
 
     @Test
     public void testRemove() {
         // Add a value
         context.add(TestKey.STRING_KEY, "test");
-        assertTrue(context.get(TestKey.STRING_KEY, String.class).isPresent());
+        assertThat(context.get(TestKey.STRING_KEY, String.class)).isPresent();
         
         // Remove the value
         context.remove(TestKey.STRING_KEY, String.class);
-        assertFalse(context.get(TestKey.STRING_KEY, String.class).isPresent());
+        assertThat(context.get(TestKey.STRING_KEY, String.class)).isEmpty();
     }
 
     @Test
     public void testIsEmpty() {
         // Initially empty
-        assertTrue(context.isEmpty());
+        assertThat(context.isEmpty()).isTrue();
         
         // Not empty after adding a value
         context.add(TestKey.STRING_KEY, "test");
-        assertFalse(context.isEmpty());
+        assertThat(context.isEmpty()).isFalse();
         
         // Empty after removing the value
         context.remove(TestKey.STRING_KEY, String.class);
-        assertTrue(context.isEmpty());
+        assertThat(context.isEmpty()).isTrue();
     }
 
     @Test
@@ -107,10 +115,11 @@ public class RuleContextTest {
         String json = context.toJson();
         
         // Verify that the JSON contains the key-value pairs
-        assertTrue(json.contains("STRING_KEY"));
-        assertTrue(json.contains("test"));
-        assertTrue(json.contains("INTEGER_KEY"));
-        assertTrue(json.contains("123"));
+        assertThat(json)
+            .contains("STRING_KEY")
+            .contains("test")
+            .contains("INTEGER_KEY")
+            .contains("123");
     }
 
     @Test
@@ -126,8 +135,12 @@ public class RuleContextTest {
         RuleContext<TestKey> newContext = RuleContext.fromJson(TestKey.class, json);
         
         // Verify that the values were correctly deserialized
-        assertEquals("test", newContext.get(TestKey.STRING_KEY, String.class).get());
-        assertEquals(123, newContext.get(TestKey.INTEGER_KEY, Integer.class).get());
+        assertThat(newContext.get(TestKey.STRING_KEY, String.class))
+            .isPresent()
+            .hasValue("test");
+        assertThat(newContext.get(TestKey.INTEGER_KEY, Integer.class))
+            .isPresent()
+            .hasValue(123);
     }
 
     @Test
@@ -137,8 +150,9 @@ public class RuleContextTest {
         String toString = context.toString();
         
         // Verify that the toString method includes the key-value pairs
-        assertTrue(toString.contains("STRING_KEY"));
-        assertTrue(toString.contains("test"));
+        assertThat(toString)
+            .contains("STRING_KEY")
+            .contains("test");
     }
 
     @Test
@@ -147,6 +161,6 @@ public class RuleContextTest {
         Optional<String> result = context.add(TestKey.STRING_KEY, null);
         
         // Verify that the result is an empty Optional
-        assertFalse(result.isPresent());
+        assertThat(result).isEmpty();
     }
 } 

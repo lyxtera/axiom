@@ -1,9 +1,8 @@
 package {0}.checks;
 
-import com.lyxtera.axiom.annotations.Arg;
-import com.lyxtera.axiom.annotations.RuleMetadata;
-import com.lyxtera.axiom.core.BusinessCheck;
-import com.lyxtera.axiom.core.ContextKey;
+import com.lyxtera.axiom.config.Arg;
+import com.lyxtera.axiom.config.RuleMetadata;
+import com.lyxtera.axiom.api.model.BusinessCheck;
 
 /**
  * {1}
@@ -12,15 +11,14 @@ import com.lyxtera.axiom.core.ContextKey;
     name = "{2}",
     description = "{3}"
 )
-public class {4} implements BusinessCheck<ContextKey> {
+public class {4} implements BusinessCheck<YourContextKey> {
 
     /**
      * Execute the business check.
      * 
      * @return true if the check passes, false otherwise
      */
-    @Override
-    public boolean check({6}) {
+    public Value execute({6}) {
         // TODO: Implement the check logic
         throw new UnsupportedOperationException("Not implemented yet");
     }
