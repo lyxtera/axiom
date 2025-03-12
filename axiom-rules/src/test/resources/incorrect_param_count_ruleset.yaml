@@ -1,0 +1,21 @@
+rulesetName: "Incorrect Parameter Count Ruleset"
+rulesetDescription: "Ruleset for testing incorrect parameter count validation"
+
+businessChecks:
+  - name: hasParameter
+    description: Check that requires a parameter
+    params:
+      - thresholdAmount
+  - name: isValidCheck
+    description: A valid check without parameters
+
+businessActions:
+  - name: validAction
+    description: A valid action
+
+rules:
+  - name: "Wrong Parameter Count Rule"
+    description: "Rule calling a function with wrong number of parameters"
+    expression: hasParameter() then validAction()  # Missing required parameter
+    priority: 100
+    effectiveFrom: "2024-01-01T00:00:00Z" 

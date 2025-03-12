@@ -1,0 +1,17 @@
+rulesetName: "Malformed Expression Ruleset"
+rulesetDescription: "Ruleset for testing malformed expression validation"
+
+businessChecks:
+  - name: isValidCheck
+    description: A valid check that is properly defined
+
+businessActions:
+  - name: validAction
+    description: A valid action
+
+rules:
+  - name: "Malformed Expression Rule"
+    description: "Rule with malformed expression"
+    expression: "isValidCheck() ### validAction()"  # Extremely malformed with invalid characters
+    priority: 100
+    effectiveFrom: "2024-01-01T00:00:00Z" 

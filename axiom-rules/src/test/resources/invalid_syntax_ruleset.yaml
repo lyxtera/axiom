@@ -1,0 +1,17 @@
+rulesetName: "Invalid Syntax Ruleset"
+rulesetDescription: "Ruleset for testing invalid syntax validation"
+
+businessChecks:
+  - name: isValidCheck
+    description: A valid check that is properly defined
+
+businessActions:
+  - name: validAction
+    description: A valid action
+
+rules:
+  - name: "Invalid Syntax Rule"
+    description: "Rule with invalid syntax"
+    expression: "if (isValidCheck()) { validAction(); }"  # Using incorrect syntax - should be 'then'
+    priority: 100
+    effectiveFrom: "2024-01-01T00:00:00Z" 

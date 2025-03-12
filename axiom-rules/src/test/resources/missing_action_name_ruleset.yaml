@@ -1,0 +1,17 @@
+rulesetName: "Missing Action Name Ruleset"
+rulesetDescription: "Ruleset for testing missing action name validation"
+
+businessChecks:
+  - name: isValidCheck
+    description: A valid check that is properly defined
+
+businessActions:
+  # Action missing a name
+  - description: An action with missing name field
+
+rules:
+  - name: "Valid Rule"
+    description: "A valid rule for testing"
+    expression: isValidCheck() then validAction()
+    priority: 100
+    effectiveFrom: "2024-01-01T00:00:00Z" 

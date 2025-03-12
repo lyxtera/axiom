@@ -1,0 +1,19 @@
+rulesetName: "Missing Description Ruleset"
+rulesetDescription: "Ruleset for testing missing description validation"
+
+businessChecks:
+  - name: missingDescription
+    # Description is intentionally missing to test validation
+  - name: validCheck
+    description: A valid check for comparison
+
+businessActions:
+  - name: validAction
+    description: A valid action
+
+rules:
+  - name: "Test Rule"
+    description: "Rule for testing missing description validation"
+    expression: missingDescription() then validAction()
+    priority: 100
+    effectiveFrom: "2024-01-01T00:00:00Z" 
