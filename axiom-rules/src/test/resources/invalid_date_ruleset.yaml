@@ -1,0 +1,17 @@
+rulesetName: "Invalid Date Ruleset"
+rulesetDescription: "Ruleset for testing invalid date format validation"
+
+businessChecks:
+  - name: isValidCheck
+    description: A valid check that is properly defined
+
+businessActions:
+  - name: validAction
+    description: A valid action
+
+rules:
+  - name: "Invalid Date Rule"
+    description: "Rule with invalid date format"
+    expression: isValidCheck() then validAction()
+    priority: 100
+    effectiveFrom: "2024/01/01-00:00:00"  # Invalid date format - should be ISO-8601 

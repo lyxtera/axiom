@@ -1,0 +1,77 @@
+rulesetName: "Invalid Ruleset"
+rulesetDescription: "Ruleset with intentional errors to test error handling"
+
+businessChecks:
+  - name: isValidCheck
+    description: A valid check function
+  - name: hasParameter
+    description: A check with a parameter
+    params:
+      - paramValue
+  # Missing description
+  - name: missingDescription
+  # Invalid parameter definition
+  - name: invalidParams
+    description: Check with invalid parameter definition
+    params:
+      paramValue: 123
+
+businessActions:
+  - name: validAction
+    description: A valid action
+  # Missing name
+  - description: Action missing a name
+  # Action with invalid parameter structure
+  - name: actionWithBadParams
+    description: Action with incorrectly defined parameters
+    params:
+      - param1: value1
+
+rules:
+  # Rule using undefined check
+  - name: "Undefined Check Rule"
+    description: "Uses a check that doesn't exist"
+    expression: nonExistentCheck() then validAction()
+    priority: 100
+    
+  # Rule using undefined action
+  - name: "Undefined Action Rule"
+    description: "Uses an action that doesn't exist"
+    expression: isValidCheck() then nonExistentAction()
+    priority: 90
+    
+  # Rule with incorrect parameter count
+  - name: "Wrong Parameter Count Rule"
+    description: "Calls a function with wrong number of parameters"
+    expression: hasParameter() then validAction()
+    priority: 80
+    
+  # Rule with invalid expression syntax
+  - name: "Invalid Syntax Rule"
+    description: "Has invalid expression syntax"
+    expression: isValidCheck() && validAction()
+    priority: 70
+    
+  # Rule with missing required field
+  - name: "Missing Priority Rule"
+    description: "Missing required priority field"
+    expression: isValidCheck() then validAction()
+    
+  # Rule with invalid date format
+  - name: "Invalid Date Rule"
+    description: "Has invalid date format"
+    expression: isValidCheck() then validAction()
+    priority: 60
+    effectiveFrom: "2023/01/01"
+    
+  # Rule with invalid parameter type
+  - name: "Invalid Parameter Type Rule"
+    description: "Uses wrong parameter type"
+    expression: hasParameter("string") then validAction()
+    priority: 50
+    
+  # Rule with malformed expression
+  - name: "Malformed Expression Rule"
+    description: "Has a malformed expression"
+    expression: isValidCheck() validAction()
+    priority: 40 

@@ -1,0 +1,27 @@
+rulesetName: "Fraud Detection Ruleset"
+rulesetDescription: "Rules for detecting fraudulent suspension requests"
+
+businessChecks:
+  - name: hasFraudSignals
+    description: Determines if the request contains signals that indicate potential fraudulent activity
+  - name: hasRiskScore
+    description: Checks if the risk score is above a specified threshold
+    params:
+      - threshold
+
+businessActions:
+  - name: blockRequest
+    description: Blocks the suspension request entirely
+
+rules:
+  - name: "Fraud Detection Rule"
+    description: "Block requests with fraud signals"
+    expression: hasFraudSignals() then blockRequest()
+    priority: 100
+    effectiveFrom: "2023-01-01T00:00:00Z"
+    
+  - name: "High Risk Score Rule"
+    description: "Block requests with very high risk scores"
+    expression: hasRiskScore(90) then blockRequest()
+    priority: 80
+    effectiveFrom: "2023-05-15T00:00:00Z" 

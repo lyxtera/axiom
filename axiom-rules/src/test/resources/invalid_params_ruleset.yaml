@@ -1,0 +1,19 @@
+rulesetName: "Invalid Parameters Ruleset"
+rulesetDescription: "Ruleset for testing invalid parameter structure validation"
+
+businessChecks:
+  - name: invalidParams
+    description: Check with invalid parameter definition
+    params:
+      paramValue: 123  # Invalid structure - should be a list of strings
+
+businessActions:
+  - name: validAction
+    description: A valid action
+
+rules:
+  - name: "Invalid Params Rule"
+    description: "Rule using check with invalid parameter structure"
+    expression: invalidParams() then validAction()
+    priority: 100
+    effectiveFrom: "2024-01-01T00:00:00Z" 

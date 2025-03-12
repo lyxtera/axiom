@@ -1,0 +1,17 @@
+rulesetName: "Undefined Action Ruleset"
+rulesetDescription: "Ruleset for testing undefined action reference validation"
+
+businessChecks:
+  - name: isValidCheck
+    description: A valid check that is properly defined
+
+businessActions:
+  - name: validAction
+    description: A valid action that is properly defined
+
+rules:
+  - name: "Undefined Action Rule"
+    description: "Rule that references a non-existent action"
+    expression: isValidCheck() then nonExistentAction()
+    priority: 100
+    effectiveFrom: "2024-01-01T00:00:00Z" 

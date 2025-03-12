@@ -1,0 +1,35 @@
+rulesetName: "Another Ruleset"
+rulesetDescription: "Another ruleset for testing AxiomModuleBuilder"
+
+businessChecks:
+  - name: isEnterpriseCompany
+    description: Determines if the organization is classified as an enterprise company
+  - name: hasRevenueAboveThreshold
+    description: Checks if the company's revenue is above a specified threshold
+    params:
+      - thresholdAmount
+  - name: hasFraudSignals
+    description: Determines if the request contains signals that indicate potential fraudulent activity
+  - name: hasRiskScore
+    description: Checks if the risk score is above a specified threshold
+    params:
+      - threshold
+
+businessActions:
+  - name: requireApproval
+    description: Marks the suspension decision as requiring manual approval before proceeding
+  - name: blockRequest
+    description: Blocks the suspension request entirely
+
+rules:
+  - name: "Another Revenue Rule"
+    description: "Another rule for high revenue companies"
+    expression: hasRevenueAboveThreshold(500000) then requireApproval()
+    priority: 90
+    effectiveFrom: "2023-02-01T00:00:00Z"
+    
+  - name: "Another Fraud Rule"
+    description: "Another rule for fraud detection"
+    expression: hasFraudSignals() then blockRequest()
+    priority: 75
+    effectiveFrom: "2023-03-15T00:00:00Z" 

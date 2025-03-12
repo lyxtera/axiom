@@ -1,0 +1,16 @@
+rulesetName: "Missing Priority Ruleset"
+rulesetDescription: "Ruleset for testing missing priority field validation"
+
+businessChecks:
+  - name: isValidCheck
+    description: A valid check that is properly defined
+
+businessActions:
+  - name: validAction
+    description: A valid action
+
+rules:
+  - name: "Missing Priority Rule"
+    description: "Rule missing the required priority field"
+    expression: isValidCheck() then validAction()
+    effectiveFrom: "2024-01-01T00:00:00Z"  # Priority field intentionally omitted 

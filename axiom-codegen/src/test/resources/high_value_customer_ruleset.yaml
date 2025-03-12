@@ -1,0 +1,34 @@
+rulesetName: "High Value Customer Ruleset"
+rulesetDescription: "Rules for determining whether a customer requires premium support"
+
+businessChecks:
+  - name: isEnterpriseCustomer
+    description: Determines if the organization is classified as an enterprise customer
+  - name: hasRevenueAboveThreshold
+    description: Checks if the company's revenue is above a specified threshold
+    params:
+      - thresholdAmount
+
+businessActions:
+  - name: requirePremiumSupport
+    description: Marks the customer as requiring premium support
+
+rules:
+  - name: "High Spender Customer Rule"
+    description: "Require premium support for high spend customers"
+    expression: isEnterpriseCustomer() then requirePremiumSupport()
+    priority: 10
+    effectiveFrom: "2023-01-01T00:00:00Z"
+    
+  - name: "High Revenue Customer Rule"
+    description: "Require premium support for high revenue customers"
+    expression: hasRevenueAboveThreshold(10000) then requirePremiumSupport()
+    priority: 30
+    effectiveFrom: "2023-06-15T00:00:00Z"
+
+  - name: "Low Revenue Customer Rule (Standard Support)"
+    description: "Require standard support for low revenue customers"
+    expression: hasRevenueBelowThreshold(1000) then requireStandardSupport()
+    priority: 50
+    effectiveFrom: "2023-06-15T00:00:00Z"
+

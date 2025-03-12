@@ -1,0 +1,27 @@
+rulesetName: "High Value Approval Ruleset"
+rulesetDescription: "Rules for determining whether suspensions require approval for high-value accounts"
+
+businessChecks:
+  - name: isEnterpriseCompany
+    description: Determines if the organization is classified as an enterprise company, which typically requires approval
+  - name: hasRevenueAboveThreshold
+    description: Checks if the company's revenue is above a specified threshold
+    params:
+      - thresholdAmount
+
+businessActions:
+  - name: requireApproval
+    description: Marks the suspension decision as requiring manual approval before proceeding
+
+rules:
+  - name: "Enterprise Company Rule"
+    description: "Require approval for enterprise companies"
+    expression: isEnterpriseCompany() then requireApproval()
+    priority: 100
+    effectiveFrom: "2023-01-01T00:00:00Z"
+    
+  - name: "High Revenue Company Rule"
+    description: "Require approval for high revenue companies"
+    expression: hasRevenueAboveThreshold(1000000) then requireApproval()
+    priority: 70
+    effectiveFrom: "2023-06-15T00:00:00Z" 
