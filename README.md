@@ -9,14 +9,13 @@ Axiom is a lightweight rule engine designed to simplify complex "if-this-then-th
 
 ## ✨ Key Features
 
-- **🚀 Lightweight & Fast** - Minimal overhead with high performance
-- **📝 YAML-based Rules** - Define rules in human-readable YAML files
-- **🔧 Code Generation** - Automatic stub generation for business checks and actions
+- **🚀 Lightweight & Fast** - Minimal overhead with high performance and less convoluted code
+- **📝 YAML-based Rules** - Define rules in human-readable YAML rule-set files
+- **🔧 Code Generation** - On-demain automatic stub generation for business checks and actions
 - **💉 Dependency Injection** - Built-in Google Guice integration
 - **🎯 Type Safety** - Compile-time type checking with generated stubs
-- **📊 Expression Language** - Powerful ANTLR-based rule expression parser
+- **📊 Expression Language** - ANTLR-based rule expression parser
 - **🔄 Hot Reloading** - Update rules without application restart
-- **🧪 Well Tested** - 70% test coverage with comprehensive test suite
 
 ## 🚀 Quick Start
 
@@ -252,47 +251,6 @@ The `axiom-codegen` Maven plugin generates type-safe stub classes:
 | `overwriteExisting` | Whether to overwrite existing files | `false` | No |
 | `skip` | Skip code generation | `false` | No |
 
-## 🏗️ Architecture
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   YAML Rules    │───▶│  Rule Parser    │───▶│  Rule Engine    │
-│                 │    │    (ANTLR)      │    │                 │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                                        │
-┌─────────────────┐    ┌─────────────────┐             │
-│  Code Generator │───▶│ Business Logic  │◄────────────┘
-│   (Maven Plugin)│    │ (Checks/Actions)│
-└─────────────────┘    └─────────────────┘
-```
-
-**Core Components:**
-
-- **Rule Parser**: ANTLR-based parser for rule expressions
-- **Rule Engine**: Executes rules with dependency injection
-- **Code Generator**: Maven plugin for stub generation  
-- **Business Logic**: User-implemented checks and actions
-
-## 🧪 Testing
-
-### Running Tests
-
-```bash
-# Run all tests
-mvn test
-
-# Run tests with coverage
-mvn test jacoco:report
-
-# Run specific test class
-mvn test -Dtest=RuleOrchestratorTest
-```
-
-### Test Coverage
-
-Current test coverage: **70% instruction, 47% branch coverage**
-
-Coverage reports are generated in `target/site/jacoco/index.html`
 
 ### Writing Tests for Rules
 
@@ -311,39 +269,12 @@ void testCustomerDiscountRule() {
 ```
 
 ## 🚀 Performance
-
 Axiom is designed for high performance:
 
 - **Method Handle Optimization**: Uses Java method handles for fast invocation
 - **Lazy Loading**: Rules loaded on demand
 - **Concurrent Execution**: Thread-safe rule execution
 - **Minimal Overhead**: Lightweight abstraction layer
-
-**Benchmarks** (JMH results on modern hardware):
-- Simple rule evaluation: ~1μs
-- Complex rule with 5 conditions: ~5μs
-- Rule set with 100 rules: ~50μs
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-### Development Setup
-
-```bash
-# Clone the repository
-git clone https://github.com/lyxtera/axiom.git
-cd axiom
-
-# Build the project
-mvn clean install
-
-# Run tests
-mvn test
-
-# Run examples
-mvn exec:java -Dexec.mainClass="com.lyxtera.axiom.examples.ExampleApplication" -pl axiom-examples
-```
 
 ### Project Structure
 
@@ -361,10 +292,9 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## 🆘 Support
 
-- **Documentation**: [Full documentation](docs/)
+- **Documentation**: [Full documentation](https://lyxtera.github.io/axiom/)
 - **Examples**: [Example applications](axiom-examples/)
 - **Issues**: [GitHub Issues](https://github.com/lyxtera/axiom/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/lyxtera/axiom/discussions)
 
 ## 🗓️ Changelog
 
@@ -372,20 +302,11 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 - ✅ Core rule engine implementation
 - ✅ ANTLR-based expression parser
 - ✅ Maven plugin for code generation
-- ✅ Comprehensive test suite (70% coverage)
 - ✅ Example applications
-- ✅ Production-ready documentation
+- ✅ Documentation
 
 ### Upcoming Features
 - 🔄 Spring Boot starter
-- 📊 Performance benchmarks
 - 🔧 Admin dashboard
 - 📈 Metrics integration
 
-## ⭐ Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=lyxtera/axiom&type=Date)](https://star-history.com/#lyxtera/axiom&Date)
-
----
-
-Made with ❤️ by [Lyxtera](https://lyxtera.com)# Trigger workflow
