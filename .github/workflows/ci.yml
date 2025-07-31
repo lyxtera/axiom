@@ -8,6 +8,11 @@ on:
   release:
     types: [ published ]
 
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
 env:
   JAVA_VERSION: '11'
   MAVEN_OPTS: -Dmaven.repo.local=${{ github.workspace }}/.m2/repository
