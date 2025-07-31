@@ -1,5 +1,6 @@
 package com.lyxtera.axiom.engine;
 
+import java.io.File;
 import java.io.IOException;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -73,7 +74,8 @@ public abstract class RuleSetLoader<K extends Enum<K>> {
         }
 
         /**
-         * Loads a YAML rule set descriptor from a classpath resource.
+         * Loads a YAML rule set descriptor from a classpath resource or file path.
+         * First tries to load as a file, then falls back to classpath resource.
          *
          * @return the rule set descriptor
          */
@@ -82,9 +84,15 @@ public abstract class RuleSetLoader<K extends Enum<K>> {
             try (var stream = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
                 if (stream != null) {
                     return MAPPER.readValue(stream, RuleSetDescriptor.class);
+                } else {
+                    File file = new File(resourcePath);
+
+                    if (file.exists() && file.isFile()) {
+                        return MAPPER.readValue(file, RuleSetDescriptor.class);
+                    }
                 }
 
-                throw RuleLoadException.loadError(resourcePath, "Resource not found in classpath");
+                throw RuleLoadException.loadError(resourcePath, "Resource not found as file or in classpath");
             } catch (IOException e) {
                 throw RuleLoadException.parseError(resourcePath, e);
             }

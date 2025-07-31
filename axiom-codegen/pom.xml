@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.lyxtera</groupId>
         <artifactId>axiom-parent</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.1</version>
     </parent>
     
     <artifactId>axiom-codegen</artifactId>
@@ -21,6 +21,16 @@
             <groupId>com.lyxtera</groupId>
             <artifactId>axiom-rules</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        
+        <!-- Jackson dependencies for YAML processing -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
         </dependency>
         
         <!-- Maven Plugin Dependencies -->
@@ -62,7 +72,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-plugin-plugin</artifactId>
                 <configuration>
-                    <goalPrefix>axiom</goalPrefix>
+                    <goalPrefix>axiom-codegen</goalPrefix>
                     <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
                 </configuration>
                 <executions>

@@ -17,10 +17,10 @@ Each rule set is associated with a dedicated rule orchestrator, which is automat
 
 Rule orchestrators provide several execution methods to meet different needs:
 
-### executeAllMatches
+### executeAllMatchingRules
 
 ```java
-RuleExecutionResult<T> executeAllMatches(RuleContext<T> context);
+RuleExecutionResult<T> executeAllMatchingRules(RuleContext<T> context);
 ```
 
 This method:
@@ -42,7 +42,7 @@ context.add(OrderContextKey.ORDER_AMOUNT, 150.0);
 context.add(OrderContextKey.CUSTOMER_TYPE, "PREMIUM");
 
 // Execute all matching rules
-RuleExecutionResult<OrderContextKey> result = discountOrchestrator.executeAllMatches(context);
+RuleExecutionResult<OrderContextKey> result = discountOrchestrator.executeAllMatchingRules(context);
 
 // Get the discounted amount after all rules applied
 if (result.hasMatches()) {
@@ -51,10 +51,10 @@ if (result.hasMatches()) {
 }
 ```
 
-### executeFirstMatchingRule
+### executeFirstMatchingRuleingRule
 
 ```java
-RuleExecutionResult<T> executeFirstMatchingRule(RuleContext<T> context);
+RuleExecutionResult<T> executeFirstMatchingRuleingRule(RuleContext<T> context);
 ```
 
 This method:
@@ -76,7 +76,7 @@ context.add(UserContextKey.IP_ADDRESS, "203.0.113.42");
 context.add(UserContextKey.LOGIN_ATTEMPTS, 5);
 
 // Execute first matching rule
-RuleExecutionResult<UserContextKey> result = fraudDetectionOrchestrator.executeFirstMatchingRule(context);
+RuleExecutionResult<UserContextKey> result = fraudDetectionOrchestrator.executeFirstMatchingRuleingRule(context);
 
 // Handle the result
 if (result.hasMatches()) {
@@ -223,7 +223,7 @@ RuleFilter<OrderContextKey> highPriorityFilter = rule -> rule.getPriority() < 10
 // Apply the filter when executing
 RuleExecutionResult<OrderContextKey> result = orderRulesOrchestrator
     .withFilter(highPriorityFilter)
-    .executeAllMatches(context);
+    .executeAllMatchingRules(context);
 ```
 
 Common filter scenarios:
@@ -267,7 +267,7 @@ ContextPreprocessor<OrderContextKey> currencyConverter = context -> {
 // Apply the preprocessor when executing
 RuleExecutionResult<OrderContextKey> result = orderRulesOrchestrator
     .withContextPreprocessor(currencyConverter)
-    .executeAllMatches(context);
+    .executeAllMatchingRules(context);
 ```
 
 ### Custom Execution Listeners
@@ -301,7 +301,7 @@ RuleExecutionListener<OrderContextKey> loggingListener = new RuleExecutionListen
 // Apply the listener when executing
 RuleExecutionResult<OrderContextKey> result = orderRulesOrchestrator
     .withExecutionListener(loggingListener)
-    .executeAllMatches(context);
+    .executeAllMatchingRules(context);
 ```
 
 ## Performance Considerations
@@ -318,14 +318,14 @@ context.add(OrderContextKey.ORDER_ID, orderId);
 
 // Execute multiple rule sets with the same context
 RuleExecutionResult<OrderContextKey> fraudResult = 
-    fraudDetectionOrchestrator.executeFirstMatchingRule(context);
+    fraudDetectionOrchestrator.executeFirstMatchingRuleingRule(context);
     
 if (!fraudResult.hasMatches()) {
     RuleExecutionResult<OrderContextKey> discountResult = 
-        discountOrchestrator.executeAllMatches(context);
+        discountOrchestrator.executeAllMatchingRules(context);
         
     RuleExecutionResult<OrderContextKey> shippingResult = 
-        shippingOrchestrator.executeAllMatches(context);
+        shippingOrchestrator.executeAllMatchingRules(context);
 }
 ```
 
@@ -339,13 +339,13 @@ ExecutorService executor = Executors.newFixedThreadPool(3);
 
 // Execute rule sets in parallel
 Future<RuleExecutionResult<OrderContextKey>> discountFuture = 
-    executor.submit(() -> discountOrchestrator.executeAllMatches(context.copy()));
+    executor.submit(() -> discountOrchestrator.executeAllMatchingRules(context.copy()));
     
 Future<RuleExecutionResult<OrderContextKey>> taxFuture = 
-    executor.submit(() -> taxOrchestrator.executeAllMatches(context.copy()));
+    executor.submit(() -> taxOrchestrator.executeAllMatchingRules(context.copy()));
     
 Future<RuleExecutionResult<OrderContextKey>> shippingFuture = 
-    executor.submit(() -> shippingOrchestrator.executeAllMatches(context.copy()));
+    executor.submit(() -> shippingOrchestrator.executeAllMatchingRules(context.copy()));
 
 // Get results
 RuleExecutionResult<OrderContextKey> discountResult = discountFuture.get();
@@ -372,7 +372,7 @@ executor.shutdown();
 
    ```java
    try {
-       RuleExecutionResult<T> result = orchestrator.executeAllMatches(context);
+       RuleExecutionResult<T> result = orchestrator.executeAllMatchingRules(context);
        // Process result
    } catch (RuleExecutionException e) {
        logger.error("Error executing rules: {}", e.getMessage(), e);
@@ -421,7 +421,7 @@ executor.shutdown();
        context.add(OrderContextKey.ORDER_AMOUNT, 200.0);
        
        // Execute rules
-       RuleExecutionResult<OrderContextKey> result = discountOrchestrator.executeAllMatches(context);
+       RuleExecutionResult<OrderContextKey> result = discountOrchestrator.executeAllMatchingRules(context);
        
        // Verify results
        assertTrue(result.hasMatches());

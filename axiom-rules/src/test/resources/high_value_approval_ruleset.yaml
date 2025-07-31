@@ -1,5 +1,5 @@
 rulesetName: "High Value Approval Ruleset"
-rulesetDescription: "Rules for determining whether suspensions require approval for high-value accounts"
+rulesetDescription: "Rules for determining whether account closures require approval for high-value accounts"
 
 businessChecks:
   - name: isEnterpriseCompany
@@ -11,7 +11,7 @@ businessChecks:
 
 businessActions:
   - name: requireApproval
-    description: Marks the suspension decision as requiring manual approval before proceeding
+    description: Marks the account closure decision as requiring manual approval before proceeding
 
 rules:
   - name: "Enterprise Company Rule"

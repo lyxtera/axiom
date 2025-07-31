@@ -113,8 +113,8 @@ When a context is evaluated against a rule set, the following process occurs:
 3. For each rule (in priority order):
    a. The condition is evaluated against the context
    b. If the condition is true, the rule's actions are executed
-   c. For `executeFirstMatch()`, processing stops after the first match
-   d. For `executeAllMatches()`, all matching rules are processed
+   c. For `executeFirstMatchingRule()`, processing stops after the first match
+   d. For `executeAllMatchingRules()`, all matching rules are processed
 
 Here's a sequence diagram illustrating the rule evaluation process:
 
@@ -123,7 +123,7 @@ Here's a sequence diagram illustrating the rule evaluation process:
 │ Service │          │ RuleOrchestrator│          │ RuleSet│          │ BusinessRule  │
 └────┬────┘          └───────┬─────────┘          └───┬────┘          └───────┬───────┘
      │                       │                        │                       │
-     │ executeFirstMatch(ctx)│                        │                       │
+     │ executeFirstMatchingRule(ctx)│                        │                       │
      │──────────────────────>│                        │                       │
      │                       │                        │                       │
      │                       │ getRulesInPriorityOrder│                       │
@@ -211,7 +211,7 @@ When rules are executed, they produce a `RuleExecutionResult` that contains info
 
 ```java
 // Execute all matching rules
-RuleExecutionResult<MyContextKey> result = orchestrator.executeAllMatches(context);
+RuleExecutionResult<MyContextKey> result = orchestrator.executeAllMatchingRules(context);
 
 // Check if any rules matched
 if (result.hasMatches()) {

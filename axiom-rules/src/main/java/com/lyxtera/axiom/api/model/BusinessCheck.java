@@ -6,5 +6,4 @@ package com.lyxtera.axiom.api.model;
  */
 public interface BusinessCheck<K extends Enum<K>> extends RuleFunction<K> {
 
-
 } 

@@ -1,8 +1,6 @@
 package com.lyxtera.axiom.api.parser;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -116,16 +114,16 @@ public class BusinessRuleVisitorTest {
         }.visitBusinessRule(ctx);
         
         // Verify the result
-        assertNotNull(result);
-        assertEquals(ruleName, result.getName());
-        assertNotNull(result.getCondition());
-        assertNotNull(result.getActions());
-        assertEquals(1, result.getActions().size());
-        assertEquals("notify", result.getActions().get(0).getName());
+        assertThat(result).isNotNull();
+        assertThat(result.getName()).isEqualTo(ruleName);
+        assertThat(result.getCondition()).isNotNull();
+        assertThat(result.getActions()).isNotNull();
+        assertThat(result.getActions()).hasSize(1);
+        assertThat(result.getActions().get(0).getName()).isEqualTo("notify");
         
         // Verify the condition evaluates correctly
         RuleContext<TestKey> context = new RuleContext<>(TestKey.class);
-        assertEquals(true, result.evaluate(context));
+        assertThat(result.evaluate(context)).isTrue();
     }
     
     @Test
@@ -153,16 +151,16 @@ public class BusinessRuleVisitorTest {
         }.visitBusinessRule(ctx);
         
         // Verify the result
-        assertNotNull(result);
-        assertEquals(ruleName, result.getName());
-        assertNull(result.getCondition());
-        assertNotNull(result.getActions());
-        assertEquals(1, result.getActions().size());
-        assertEquals("notify", result.getActions().get(0).getName());
+        assertThat(result).isNotNull();
+        assertThat(result.getName()).isEqualTo(ruleName);
+        assertThat(result.getCondition()).isNull();
+        assertThat(result.getActions()).isNotNull();
+        assertThat(result.getActions()).hasSize(1);
+        assertThat(result.getActions().get(0).getName()).isEqualTo("notify");
         
         // Verify the rule evaluates to true when there's no condition
         RuleContext<TestKey> context = new RuleContext<>(TestKey.class);
-        assertEquals(true, result.evaluate(context));
+        assertThat(result.evaluate(context)).isTrue();
     }
     
     @Test
@@ -189,15 +187,15 @@ public class BusinessRuleVisitorTest {
         }.visitBusinessRule(ctx);
         
         // Verify the result
-        assertNotNull(result);
-        assertEquals(ruleName, result.getName());
-        assertNotNull(result.getCondition());
-        assertNotNull(result.getActions());
-        assertEquals(0, result.getActions().size());
+        assertThat(result).isNotNull();
+        assertThat(result.getName()).isEqualTo(ruleName);
+        assertThat(result.getCondition()).isNotNull();
+        assertThat(result.getActions()).isNotNull();
+        assertThat(result.getActions()).isEmpty();
         
         // Verify the condition evaluates correctly
         RuleContext<TestKey> context = new RuleContext<>(TestKey.class);
-        assertEquals(true, result.evaluate(context));
+        assertThat(result.evaluate(context)).isTrue();
     }
     
     @Test
@@ -218,14 +216,14 @@ public class BusinessRuleVisitorTest {
         }.visitBusinessRule(ctx);
         
         // Verify the result
-        assertNotNull(result);
-        assertEquals(ruleName, result.getName());
-        assertNull(result.getCondition());
-        assertNotNull(result.getActions());
-        assertEquals(0, result.getActions().size());
+        assertThat(result).isNotNull();
+        assertThat(result.getName()).isEqualTo(ruleName);
+        assertThat(result.getCondition()).isNull();
+        assertThat(result.getActions()).isNotNull();
+        assertThat(result.getActions()).isEmpty();
         
         // Verify the rule evaluates to true when there's no condition
         RuleContext<TestKey> context = new RuleContext<>(TestKey.class);
-        assertEquals(true, result.evaluate(context));
+        assertThat(result.evaluate(context)).isTrue();
     }
 } 

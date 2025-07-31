@@ -257,8 +257,7 @@ public class OutcomeVisitorTest {
         when(identifierNode.getText()).thenReturn("unknown");
         
         // Verify that a RuleParserException is thrown
-        assertThrows(RuleParserException.class, () -> {
-            visitor.visitBusinessActionList(ctx);
-        });
+        assertThatThrownBy(() -> visitor.visitBusinessActionList(ctx))
+            .isInstanceOf(RuleParserException.class);
     }
 } 

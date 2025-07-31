@@ -37,7 +37,7 @@ public class HasRiskScoreCheck implements BusinessCheck<MyContextKey> {
         Integer riskScore = context.getRequired(MyContextKey.RISK_SCORE, Integer.class);
         
         // Get the threshold value from the argument
-        Integer thresholdValue = threshold.asInteger();
+        Integer thresholdValue = threshold.asNumber().intValue();
         
         // Return true if the risk score is greater than or equal to the threshold
         return Value.of(riskScore >= thresholdValue);
@@ -176,8 +176,8 @@ The `Value` class provides methods to convert the argument to various types:
 
 ```java
 // Convert to primitive types
-Integer intValue = value.asInteger();
-Double doubleValue = value.asDouble();
+        Integer intValue = value.asNumber().intValue();
+Double doubleValue = value.asNumber().doubleValue();
 Boolean boolValue = value.asBoolean();
 String stringValue = value.asString();
 

@@ -306,7 +306,7 @@ public void testPremiumMemberDiscount() {
     context.add(OrderContextKey.ORDER_AMOUNT, 100.0);
     
     // Execute rule set
-    RuleExecutionResult<OrderContextKey> result = discountOrchestrator.executeAllMatches(context);
+    RuleExecutionResult<OrderContextKey> result = discountOrchestrator.executeAllMatchingRules(context);
     
     // Verify results
     assertTrue(result.hasMatches());

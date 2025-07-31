@@ -1,34 +1,30 @@
 rulesetName: "High Value Customer Ruleset"
-rulesetDescription: "Rules for determining whether a customer requires premium support"
+rulesetDescription: "Rules for determining whether a customer qualifies for a discount"
 
 businessChecks:
-  - name: isEnterpriseCustomer
-    description: Determines if the organization is classified as an enterprise customer
-  - name: hasRevenueAboveThreshold
-    description: Checks if the company's revenue is above a specified threshold
+  - name: isHighValueCustomer
+    description: Determines if the customer has high spending patterns
     params:
       - thresholdAmount
+  - name: hasLoyaltyStatus
+    description: Checks if the customer has loyalty status
 
 businessActions:
-  - name: requirePremiumSupport
-    description: Marks the customer as requiring premium support
+  - name: applyDiscount
+    description: Applies a discount to the customer's order
+    params:
+      - percentage
 
 rules:
-  - name: "High Spender Customer Rule"
-    description: "Require premium support for high spend customers"
-    expression: isEnterpriseCustomer() then requirePremiumSupport()
+  - name: "High Value Customer Rule"
+    description: "Apply discount for high value customers"
+    expression: isHighValueCustomer(1000) then applyDiscount(10)
     priority: 10
     effectiveFrom: "2023-01-01T00:00:00Z"
     
-  - name: "High Revenue Customer Rule"
-    description: "Require premium support for high revenue customers"
-    expression: hasRevenueAboveThreshold(10000) then requirePremiumSupport()
-    priority: 30
-    effectiveFrom: "2023-06-15T00:00:00Z"
-
-  - name: "Low Revenue Customer Rule (Standard Support)"
-    description: "Require standard support for low revenue customers"
-    expression: hasRevenueBelowThreshold(1000) then requireStandardSupport()
-    priority: 50
+  - name: "Loyalty Status Rule"
+    description: "Apply discount for customers with loyalty status"
+    expression: hasLoyaltyStatus() then applyDiscount(5)
+    priority: 20
     effectiveFrom: "2023-06-15T00:00:00Z"
 

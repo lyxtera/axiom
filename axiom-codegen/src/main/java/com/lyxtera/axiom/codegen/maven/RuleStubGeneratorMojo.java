@@ -1,6 +1,9 @@
 package com.lyxtera.axiom.codegen.maven;
 
-import com.lyxtera.axiom.codegen.RuleStubGenerator;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -9,10 +12,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
+import com.lyxtera.axiom.codegen.RuleStubGenerator;
 
 /**
  * Goal to generate rule stubs based on ruleset YAML files.
@@ -56,6 +56,12 @@ public class RuleStubGeneratorMojo extends AbstractMojo {
     @Parameter(property = "axiom.stubs.overwriteExisting", defaultValue = "false")
     private boolean overwriteExisting;
 
+    /**
+     * The fully qualified name of the context enum class (e.g. "com.lyxtera.axiom.examples.rules.CustomerContextKey").
+     */
+    @Parameter(property = "axiom.stubs.contextKeyEnum", required = true)
+    private String contextKeyEnum;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         if (skip) {
@@ -63,10 +69,11 @@ public class RuleStubGeneratorMojo extends AbstractMojo {
             return;
         }
 
-        getLog().info("Generating rule stubs");
+        getLog().info("Generating axiom rule stubs");
         getLog().info("Package: " + packageName);
         getLog().info("Output directory: " + outputDirectory);
         getLog().info("Overwrite existing: " + overwriteExisting);
+        getLog().info("Context key enum: " + contextKeyEnum);
         
         // Parse the ruleSets parameter into a list of paths
         List<String> ruleSetPaths = new ArrayList<>();
@@ -96,7 +103,8 @@ public class RuleStubGeneratorMojo extends AbstractMojo {
                     packageName, 
                     outputDirectory.getAbsolutePath(), 
                     ruleSetPaths, 
-                    overwriteExisting);
+                    overwriteExisting,
+                    contextKeyEnum);
             
             // Generate stubs
             int filesGenerated = generator.generateStubs();

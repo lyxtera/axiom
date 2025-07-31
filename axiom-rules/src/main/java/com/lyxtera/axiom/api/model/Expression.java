@@ -4,7 +4,7 @@ import com.lyxtera.axiom.engine.RuleContext;
 
 /**
  * Interface representing an expression in a business rule.
- * Expressions can be conditions, functions, or values.
+ * Expressions can be conditions, function calls, or values.
  */
 @FunctionalInterface
 public interface Expression<K extends Enum<K>> {
@@ -24,6 +24,6 @@ public interface Expression<K extends Enum<K>> {
      * expression
      */
     default Expression<K> negate() {
-        return (t) -> !evaluate(t);
+        return t -> !evaluate(t);
     }
 } 

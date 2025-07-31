@@ -3,6 +3,7 @@ package com.lyxtera.axiom.api.parser;
 import com.lyxtera.axiom.antlr.BusinessRuleBaseVisitor;
 import com.lyxtera.axiom.antlr.BusinessRuleParser;
 import com.lyxtera.axiom.api.model.Value;
+import com.lyxtera.axiom.api.model.Value.Type;
 
 /**
  * Specialized visitor for parsing arguments in function calls.
@@ -19,18 +20,14 @@ public class ArgumentVisitor<K extends Enum<K>> extends BusinessRuleBaseVisitor<
      * Visits a number literal node in the parse tree and constructs a {@link Value} object.
      * <p>
      * This method parses the number literal and determines whether it's an integer or a decimal.
+     * It properly handles both positive and negative numbers.
      *
      * @param ctx The number literal context from the parse tree
      * @return A Value object representing the number literal
      */
     @Override
     public Value visitNumberLiteral(BusinessRuleParser.NumberLiteralContext ctx) {
-        String text = ctx.NUMBER().getText();
-        if (text.contains(".")) {
-            return new Value(Double.parseDouble(text), Value.Type.DECIMAL);
-        } else {
-            return new Value(Integer.parseInt(text), Value.Type.INTEGER);
-        }
+        return new Value(ctx.NUMBER().getText(), Type.NUMBER);
     }
     
     /**
@@ -44,8 +41,6 @@ public class ArgumentVisitor<K extends Enum<K>> extends BusinessRuleBaseVisitor<
     @Override
     public Value visitStringLiteral(BusinessRuleParser.StringLiteralContext ctx) {
         String text = ctx.STRING().getText();
-        // Remove quotes from string literal
-        String value = text.substring(1, text.length() - 1);
-        return new Value(value, Value.Type.STRING);
+        return new Value(text.substring(1, text.length() - 1), Type.STRING);
     }
 } 

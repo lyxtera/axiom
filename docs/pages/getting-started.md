@@ -1,6 +1,91 @@
 # Getting Started with Axiom Business Rules
 
-This guide will help you set up and start using the Axiom Business Rules framework in your Java application. We'll cover the basic steps to integrate Axiom, create your first rule set, and execute rules.
+This guide aims to provide you with:
+
+1. A clear understanding of Axiom business rules concepts
+2. Step-by-step instructions for creating and testing rules
+3. Best practices for rule development
+4. Real-world examples based on actual implementations
+5. Troubleshooting tips
+
+
+## Architecture Overview
+
+### Business Rule
+
+A “rule” is a small, self-contained piece of logic that says: “When certain conditions are met, perform these action(s).”
+Each rule has two main parts:
+- Condition(s) – A Boolean check (or set of checks combined using logical operators) that determins if the rule should fire.
+- Action(s) – One or more pieces of code to execute when the conditions evaluate to true.
+
+### Rule Sets
+
+Collections of business rules combined with metadata and priority. Rule-sets group related rules together and maintain rule priority ordering. By default loaded from YAML files.
+
+### Rule Parser
+
+Converts rule definitions to executable objects. The rule parser interprets the rule expressions and creates the appropriate Java objects.
+
+### Business Checks
+
+Functions that represent declared conditions and are implemented as the `BusinessCheck<K>` interface. They can take (0..N) parameters and return `Value` objects of the type `Value.Type.BOOLEAN` indicating whether a condition is met.
+
+```java
+@RuleMetadata(name = "hasRiskScore", description = "Checks if the risk score is above a specified threshold")
+public class HasRiskScoreCheck implements BusinessCheck<ContextKey> {
+    public Value execute(RuleContext<ContextKey> context, @Arg("threshold") Value threshold) {
+        Integer riskScore = context.getRequired(ContextKey.RISK_SCORE, Integer.class);
+        Integer thresholdValue = threshold.asNumber().intValue();
+        return Value.of(riskScore >= thresholdValue);
+    }
+}
+```
+
+### Business Actions
+
+Functions that perform actions when rules match. Business actions are implemented as Java classes that implement the `BusinessAction<K>` interface. They are executed when a rule's condition is met.
+
+```java
+@RuleMetadata(name = "blockRequest", description = "Blocks the suspension request entirely")
+public class BlockRequestAction implements BusinessAction<ContextKey> {
+    @Override
+    public Value execute(RuleContext<ContextKey> context) {
+        context.add(ContextKey.REQUEST_BLOCKED, true);
+        return Value.of(true);
+    }
+}
+```
+
+### Rule Context
+
+A thread-safe container for data being processed by rules. The rule context provides a type-safe way to store and retrieve data during rule evaluation.
+
+```java
+RuleContext<ContextKey> context = new RuleContext<>(ContextKey.class);
+context.add(ContextKey.CUSTOMER_ID, "C12345");
+context.add(ContextKey.TRANSACTION_AMOUNT, 9999.99);
+```
+
+### Rule Orchestrator
+
+Coordinates rule evaluation and execution. The rule orchestrator applies rules from a rule set against a given context and provides methods to execute rules and retrieve results.
+
+```java
+RuleOrchestrator<ContextKey> orchestrator = new RuleOrchestrator<>(ruleSet);
+RuleExecutionResult<ContextKey> result = orchestrator.executeFirstMatchingRule(context);
+```
+
+
+
+This modular design allows for flexible integration with existing Java applications using dependency injection frameworks like Guice.
+
+## How to Use This Guide
+
+The guide is organized in a logical progression, starting with basic concepts and moving toward more advanced topics. If you're new to Axiom, we recommend starting with the Getting Started section. Experienced users may want to jump directly to specific topics using the navigation menu.
+
+Each section includes practical examples based on real-world use cases and actual implementations of the Axiom framework.
+
+Let's begin your journey with Axiom Business Rules!
 
 ## Prerequisites
 
@@ -19,8 +104,15 @@ Add the Axiom dependency to your `pom.xml`:
 ```xml
 <dependency>
     <groupId>com.lyxtera</groupId>
-    <artifactId>axiom</artifactId>
-    <version>1.0.0</version>
+    <artifactId>axiom-rules</artifactId>
+    <version>1.0.1</version>
+</dependency>
+
+<!-- For Spring Boot integration (optional) -->
+<dependency>
+    <groupId>com.lyxtera</groupId>
+    <artifactId>axiom-spring-boot-starter</artifactId>
+    <version>1.0.1</version>
 </dependency>
 
 <!-- Guice for dependency injection -->
@@ -37,7 +129,9 @@ Add the Axiom dependency to your `build.gradle`:
 
 ```groovy
 dependencies {
-    implementation 'com.lyxtera:axiom:1.0.0'
+    implementation 'com.lyxtera:axiom-rules:1.0.1'
+    // For Spring Boot integration (optional)
+    implementation 'com.lyxtera:axiom-spring-boot-starter:1.0.1'
     implementation 'com.google.inject:guice:5.1.0'
 }
 ```
@@ -85,7 +179,7 @@ public class HighValueOrderCheck implements BusinessCheck<OrderContextKey> {
     @Override
     public Value execute(RuleContext<OrderContextKey> context, @Arg("threshold") Value threshold) {
         Double orderAmount = context.getRequired(OrderContextKey.ORDER_AMOUNT, Double.class);
-        Double thresholdValue = threshold.asDouble();
+        Double thresholdValue = threshold.asNumber().doubleValue();
         return Value.of(orderAmount > thresholdValue);
     }
 }
@@ -103,7 +197,7 @@ public class ApplyDiscountAction implements BusinessAction<OrderContextKey> {
     @Override
     public Value execute(RuleContext<OrderContextKey> context, @Arg("percent") Value percent) {
         Double orderAmount = context.getRequired(OrderContextKey.ORDER_AMOUNT, Double.class);
-        Double discountPercent = percent.asDouble();
+        Double discountPercent = percent.asNumber().doubleValue();
         
         Double discountedAmount = orderAmount * (1 - (discountPercent / 100));
         context.add(OrderContextKey.ORDER_AMOUNT, discountedAmount);
@@ -211,7 +305,7 @@ public class OrderService {
         context.add(OrderContextKey.IS_REPEAT_CUSTOMER, isRepeatCustomer(order.getCustomerId()));
         
         // Execute all matching rules
-        RuleExecutionResult<OrderContextKey> result = discountOrchestrator.executeAllMatches(context);
+        RuleExecutionResult<OrderContextKey> result = discountOrchestrator.executeAllMatchingRules(context);
         
         // Update the order with the potentially modified amount
         if (result.hasMatches()) {

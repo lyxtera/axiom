@@ -3,6 +3,9 @@ package {0}.actions;
 import com.lyxtera.axiom.config.Arg;
 import com.lyxtera.axiom.config.RuleMetadata;
 import com.lyxtera.axiom.api.model.BusinessAction;
+import com.lyxtera.axiom.api.model.Value;
+import com.lyxtera.axiom.engine.RuleContext;
+import {5};
 
 /**
  * {1}
@@ -11,7 +14,7 @@ import com.lyxtera.axiom.api.model.BusinessAction;
     name = "{2}",
     description = "{3}"
 )
-public class {4} implements BusinessAction<YourContextKey> {
+public class {4} implements BusinessAction<CTX-KEY-ENUM> {
 
     /**
      * Execute the business action.

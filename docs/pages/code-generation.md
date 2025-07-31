@@ -1,95 +1,109 @@
 # Code Generation
 
-This page describes how to use the code generation tools provided by Axiom to generate Java stub classes for business checks and actions from YAML rule set files.
+This page describes how to use the code generation maven plugin to generate Java stub classes for business checks and actions from the YAML rule-set files.
 
-## RuleStubGenerator
+## Axiom Codegen Maven Plugin
 
-The `RuleStubGenerator` is a utility class that reads Axiom rule set YAML files and generates Java stub classes for the business checks and actions defined in those files. These generated classes provide a starting point for implementing your business logic.
+The `axiom-codegen` Maven plugin provides a simple way to generate Java stub classes for your business checks and actions defined in Axiom rule set YAML files. This plugin will automatically:
 
-### Command Line Usage
+1. Generate Java classes for all business checks and actions in your rule set YAML files
+2. Place them in appropriate packages based on your configuration
+3. Add the generated sources to your project's compilation path
 
-You can run the `RuleStubGenerator` directly from the command line using the following syntax:
+### Adding the Plugin to Your Project
 
-```bash
-java -cp my-classpath com.lyxtera.axiom.codegen.RuleStubGenerator \
-  --basePackage=com.example.rules \
-  --outputDirectory=src/main/java \
-  --ruleSet=src/main/resources/rule-set1.yaml \
-  --ruleSet=src/main/resources/rule-set2.yaml \
-  --overwriteExisting=true
-```
-
-### Configuration Parameters
-
-The `RuleStubGenerator` accepts the following command-line arguments:
-
-- `--basePackage=<package>`: Base package for generated classes (required)
-- `--outputDirectory=<dir>`: Output directory (default: src/main/java)
-- `--ruleSet=<path>`: Path to rule set YAML file (can be specified multiple times)
-- `--overwriteExisting=<true|false>`: Whether to overwrite existing files (default: false)
-
-## Maven Integration
-
-To integrate the `RuleStubGenerator` into your Maven build process, you can use the `exec-maven-plugin` to run the generator during the build. This approach allows you to automatically generate stub classes whenever you build your project.
-
-Add the following plugin configuration to your POM file:
+To use the axiom-codegen plugin in your project, add the following configuration to your `pom.xml` file:
 
 ```xml
 <plugin>
-    <groupId>org.codehaus.mojo</groupId>
-    <artifactId>exec-maven-plugin</artifactId>
-    <version>3.1.0</version>
+    <groupId>com.lyxtera</groupId>
+    <artifactId>axiom-codegen</artifactId>
+    <version>${axiom.version}</version>
     <executions>
         <execution>
-            <id>generate-rule-stubs</id>
-            <phase>generate-sources</phase>
+            <id>generate-stubs</id>
             <goals>
-                <goal>java</goal>
+                <goal>generate-stubs</goal>
             </goals>
             <configuration>
-                <mainClass>com.lyxtera.axiom.codegen.RuleStubGenerator</mainClass>
-                <arguments>
-                    <argument>--basePackage=com.example.rules</argument>
-                    <argument>--outputDirectory=src/main/java</argument>
-                    <argument>--ruleSet=src/main/resources/rule-set1.yaml</argument>
-                    <argument>--ruleSet=src/main/resources/rule-set2.yaml</argument>
-                    <argument>--overwriteExisting=false</argument>
-                </arguments>
-                <includePluginDependencies>true</includePluginDependencies>
+                <packageName>com.example.rules</packageName>
+                <contextKeyEnum>com.example.rules.MyContextKey</contextKeyEnum>
+                <ruleSets>${project.basedir}/src/main/resources/my_ruleset.yaml</ruleSets>
+                <outputDirectory>src/main/java/</outputDirectory>
+                <overwriteExisting>true</overwriteExisting>
+                <skip>false</skip>
             </configuration>
         </execution>
     </executions>
-    <dependencies>
-        <dependency>
-            <groupId>com.lyxtera</groupId>
-            <artifactId>axiom</artifactId>
-            <version>${axiom.version}</version>
-        </dependency>
-    </dependencies>
 </plugin>
 ```
 
-### Adding Generated Sources to Build
+### Plugin Configuration Parameters
 
-To ensure that the generated Java classes are included in the compilation process, you'll need to add the output directory to the build path. You can do this using the `build-helper-maven-plugin`:
+The plugin accepts the following configuration parameters:
+
+| Parameter | Property | Description | Default | Required |
+|-----------|----------|-------------|---------|----------|
+| `packageName` | `axiom.stubs.package` | Base package for generated classes | - | Yes |
+| `contextKeyEnum` | `axiom.stubs.contextKeyEnum` | Fully qualified name of the context enum class | - | Yes |
+| `ruleSets` | `axiom.stubs.ruleSets` | Comma-separated list of rule set YAML files to process | - | Yes |
+| `outputDirectory` | `axiom.stubs.outputDirectory` | Directory to output generated sources to | `${project.build.directory}/generated-sources/axiom` | No |
+| `overwriteExisting` | `axiom.stubs.overwriteExisting` | Whether to overwrite existing files | `false` | No |
+| `skip` | `axiom.stubs.skip` | Skip the rule stub generation | `false` | No |
+
+### Example Configuration
+
+Here's a complete example from the `axiom-examples` project:
 
 ```xml
 <plugin>
-    <groupId>org.codehaus.mojo</groupId>
-    <artifactId>build-helper-maven-plugin</artifactId>
-    <version>3.3.0</version>
+    <groupId>com.lyxtera</groupId>
+    <artifactId>axiom-codegen</artifactId>
+    <version>${project.version}</version>
     <executions>
         <execution>
-            <id>add-source</id>
+            <id>generate-axiom-stubs</id>
             <phase>generate-sources</phase>
             <goals>
-                <goal>add-source</goal>
+                <goal>generate-stubs</goal>
             </goals>
             <configuration>
-                <sources>
-                    <source>src/main/java</source>
-                </sources>
+                <packageName>com.lyxtera.axiom.examples.rules</packageName>
+                <contextKeyEnum>com.lyxtera.axiom.examples.rules.CustomerContextKey</contextKeyEnum>
+                <ruleSets>${project.basedir}/src/main/resources/customer_discount_ruleset.yaml</ruleSets>
+                <outputDirectory>src/main/java/</outputDirectory>
+                <overwriteExisting>true</overwriteExisting>
+                <skip>false</skip>
             </configuration>
+        </execution>
+    </executions>
+</plugin>
+```
+
+This configuration will process the `customer_discount_ruleset.yaml` file and generate Java stub classes in the `com.lyxtera.axiom.examples.rules` package.
+
+### Using Properties in Configuration
+
+You can also use Maven properties to configure the plugin, making it easier to manage configurations across different environments:
+
+```xml
+<properties>
+    <axiom.stubs.skip>false</axiom.stubs.skip>
+    <axiom.stubs.package>com.example.rules</axiom.stubs.package>
+    <axiom.stubs.contextKeyEnum>com.example.rules.MyContextKey</axiom.stubs.contextKeyEnum>
+</properties>
+
+<plugin>
+    <groupId>com.lyxtera</groupId>
+    <artifactId>axiom-codegen</artifactId>
+    <version>${axiom.version}</version>
+    <executions>
+        <execution>
+            <id>generate-axiom-stubs</id>
+            <phase>generate-sources</phase>
+            <goals>
+                <goal>generate-stubs</goal>
+            </goals>
         </execution>
     </executions>
 </plugin>
@@ -97,7 +111,7 @@ To ensure that the generated Java classes are included in the compilation proces
 
 ## Generated Code Structure
 
-The `RuleStubGenerator` creates two types of stub classes:
+The `axiom-codegen` plugin creates two types of stub classes:
 
 1. **Business Check Classes** - Placed in the `checks` package under your base package
 2. **Business Action Classes** - Placed in the `actions` package under your base package
@@ -105,27 +119,32 @@ The `RuleStubGenerator` creates two types of stub classes:
 For example, given the following YAML ruleset:
 
 ```yaml
-rulesetName: "High Value Approval Ruleset"
-rulesetDescription: "Rules for determining whether suspensions require approval for high-value accounts"
+rulesetName: "Customer Discount Ruleset"
+rulesetDescription: "Rules for applying discounts to customers"
 
 businessChecks:
-  - name: isEnterpriseCompany
-    description: Determines if the organization is classified as an enterprise company
-  - name: hasRevenueAboveThreshold
-    description: Checks if the company's revenue is above a specified threshold
+  - name: isHighValueCustomer
+    description: Determines if the customer has high spending for the past N days
     params:
-      - thresholdAmount
+      - spendingThreshold
+      - days
+  - name: hasLoyaltyStatus
+    description: Checks if the customer has loyalty status
+    params:
+      - loyaltyLevel
 
 businessActions:
-  - name: requireApproval
-    description: Marks the suspension decision as requiring manual approval before proceeding
+  - name: applyDiscount
+    description: Applies a discount to the customer's order
+    params:
+      - percentage
 ```
 
 The generator will create the following Java classes:
 
-1. `com.example.rules.checks.IsEnterpriseCompanyCheck.java`
-2. `com.example.rules.checks.HasRevenueAboveThresholdCheck.java`
-3. `com.example.rules.actions.RequireApprovalAction.java`
+1. `com.example.rules.checks.IsHighValueCustomerCheck.java`
+2. `com.example.rules.checks.HasLoyaltyStatusCheck.java`
+3. `com.example.rules.actions.ApplyDiscountAction.java`
 
 Each generated class includes:
 

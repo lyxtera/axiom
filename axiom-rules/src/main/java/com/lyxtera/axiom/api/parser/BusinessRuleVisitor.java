@@ -55,14 +55,14 @@ public class BusinessRuleVisitor<K extends Enum<K>> extends BusinessRuleBaseVisi
      */
     @Override
     public BusinessRule<K> visitBusinessRule(BusinessRuleParser.BusinessRuleContext ctx) {
-        ConditionVisitor<K> conditionVisitor = new ConditionVisitor<K>(businessChecks, metadata);
+        ConditionVisitor<K> conditionVisitor = new ConditionVisitor<>(businessChecks, metadata);
         Condition<K> condition = null;
 
         if (ctx.expression() != null) {
             condition = conditionVisitor.visitExpression(ctx.expression());
         }
 
-        OutcomeVisitor<K> outcomeVisitor = new OutcomeVisitor<K>(businessActions, metadata);
+        OutcomeVisitor<K> outcomeVisitor = new OutcomeVisitor<>(businessActions, metadata);
         List<RuleFunction<K>> actions = new ArrayList<>();
 
         if (ctx.outcome() != null) {

@@ -43,7 +43,7 @@ public class HighValueOrderCheck implements BusinessCheck<OrderContextKey> {
         Double orderAmount = context.getRequired(OrderContextKey.ORDER_AMOUNT, Double.class);
         
         // Get the threshold value from the argument
-        Double thresholdValue = threshold.asDouble();
+        Double thresholdValue = threshold.asNumber().doubleValue();
         
         // Return true if the order amount exceeds the threshold
         return Value.of(orderAmount >= thresholdValue);
@@ -68,7 +68,7 @@ public class ApplyDiscountAction implements BusinessAction<OrderContextKey> {
         Double orderAmount = context.getRequired(OrderContextKey.ORDER_AMOUNT, Double.class);
         
         // Get the discount percentage from the argument
-        Double discountPercentage = percentage.asDouble();
+        Double discountPercentage = percentage.asNumber().doubleValue();
         
         // Calculate the discounted amount
         Double discountedAmount = orderAmount * (1 - (discountPercentage / 100));
@@ -147,7 +147,7 @@ public class CreditScoreCheck implements BusinessCheck<CustomerContextKey> {
         String customerId = context.getRequired(CustomerContextKey.CUSTOMER_ID, String.class);
         
         // Get the minimum score from the argument
-        int minimumScore = minScore.asInteger();
+        int minimumScore = minScore.asNumber().intValue();
         
         // Call the credit score service
         int creditScore = creditScoreService.getCreditScore(customerId);
@@ -243,7 +243,7 @@ public class LimitedDiscountAction implements BusinessAction<OrderContextKey> {
         Double orderAmount = context.getRequired(OrderContextKey.ORDER_AMOUNT, Double.class);
         
         // Apply the discount
-        Double discountPercentage = percentage.asDouble();
+        Double discountPercentage = percentage.asNumber().doubleValue();
         Double discountedAmount = orderAmount * (1 - (discountPercentage / 100));
         
         // Update the context
@@ -335,8 +335,8 @@ public class RangeCheck implements BusinessCheck<OrderContextKey> {
                          @Arg("max") Value max) {
         // Get the values from the arguments
         String targetKey = target.asString();
-        Double minValue = min.asDouble();
-        Double maxValue = max.asDouble();
+        Double minValue = min.asNumber().doubleValue();
+        Double maxValue = max.asNumber().doubleValue();
         
         // Get the target value from the context
         Double targetValue = context.getRequired(OrderContextKey.valueOf(targetKey), Double.class);

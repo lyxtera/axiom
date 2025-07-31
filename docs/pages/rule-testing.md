@@ -168,7 +168,7 @@ void testRuleSetPriorityOrder() {
     context.add(TestCtxKey.MATCHES_LOW_PRIORITY, true);
     
     // Execute first match
-    RuleExecutionResult<TestCtxKey> result = orchestrator.executeFirstMatch(context);
+    RuleExecutionResult<TestCtxKey> result = orchestrator.executeFirstMatchingRule(context);
     
     // Verify the high priority rule matched
     assertThat(result.hasMatch()).isTrue();
@@ -263,7 +263,7 @@ void testIntegrationWithGuice() {
     context.add(TestCtxKey.TEST_CONDITION, true);
     
     // Execute rules
-    RuleExecutionResult<TestCtxKey> result = orchestrator.executeFirstMatch(context);
+    RuleExecutionResult<TestCtxKey> result = orchestrator.executeFirstMatchingRule(context);
     
     // Verify the rule matched and action was performed
     assertThat(result.hasMatch()).isTrue();
@@ -322,7 +322,7 @@ void testYamlRuleSet() throws IOException {
         
         // Execute the rule
         RuleExecutionResult<TestCtxKey> result = 
-            helper.getOrchestrator().executeFirstMatch(context);
+            helper.getOrchestrator().executeFirstMatchingRule(context);
         
         // Verify the rule matched
         assertThat(result.hasMatch()).isTrue();
@@ -390,7 +390,7 @@ void testEffectiveDateHandling() {
     RuleContext<TestCtxKey> context = new RuleContext<>(TestCtxKey.class);
     
     // Execute rules - should not match because the rule is not effective yet
-    RuleExecutionResult<TestCtxKey> result = orchestrator.executeFirstMatch(context);
+    RuleExecutionResult<TestCtxKey> result = orchestrator.executeFirstMatchingRule(context);
     assertThat(result.hasMatch()).isFalse();
     
     // Now, we need to mock time to be after the effective date
@@ -407,7 +407,7 @@ void testEffectiveDateHandling() {
     // ruleSet.setClock(mockClock);
     
     // Execute rules again - now should match
-    // RuleExecutionResult<TestCtxKey> resultAfterTimeChange = orchestrator.executeFirstMatch(context);
+    // RuleExecutionResult<TestCtxKey> resultAfterTimeChange = orchestrator.executeFirstMatchingRule(context);
     // assertThat(resultAfterTimeChange.hasMatch()).isTrue();
 }
 ```
@@ -432,7 +432,7 @@ void testRuleExecutionPerformance() {
     // Measure execution time
     long startTime = System.nanoTime();
     
-    orchestrator.executeFirstMatch(context);
+    orchestrator.executeFirstMatchingRule(context);
     
     long endTime = System.nanoTime();
     long durationMs = (endTime - startTime) / 1_000_000; // Convert to milliseconds
@@ -461,7 +461,7 @@ void testComplexRuleExecutionResults() {
     context.add(TestCtxKey.ORDER_AMOUNT, 5000.0);
     
     // Execute all matching rules
-    RuleExecutionResult<TestCtxKey> result = orchestrator.executeAllMatches(context);
+    RuleExecutionResult<TestCtxKey> result = orchestrator.executeAllMatchingRules(context);
     
     // Verify multiple aspects of the result
     assertThat(result.hasMatches()).isTrue();

@@ -9,158 +9,121 @@ import org.junit.jupiter.api.Test;
 /**
  * Test for {@link Operator} class.
  */
-public class OperatorTest {
+class OperatorTest {
 
     @Test
-    public void testEqualsOperator() {
+    void testEqualsOperator() {
         Operator operator = Operator.fromSymbol("=");
         assertThat(operator).isEqualTo(Operator.EQUALS);
-        assertThat(operator.apply(2, 2)).isTrue();
+        assertThat(operator.apply(Value.of(2), Value.of(2))).isTrue();
     }
 
     @Test
-    public void testNotEqualsOperator() {
-        // If NOT_EQUALS exists, uncomment this test
-        // Operator operator = Operator.fromSymbol("!=");
-        // assertThat(operator).isEqualTo(Operator.NOT_EQUALS);
-        // assertThat(operator.apply(2, 3)).isTrue();
-    }
-
-    @Test
-    public void testGreaterThanOperator() {
+    void testGreaterThanOperator() {
         Operator operator = Operator.fromSymbol(">");
         assertThat(operator).isEqualTo(Operator.GREATER_THAN);
-        assertThat(operator.apply(3, 2)).isTrue();
+        assertThat(operator.apply(Value.of(3), Value.of(2))).isTrue();
     }
 
     @Test
-    public void testLessThanOperator() {
+    void testLessThanOperator() {
         Operator operator = Operator.fromSymbol("<");
         assertThat(operator).isEqualTo(Operator.LESS_THAN);
-        assertThat(operator.apply(2, 3)).isTrue();
+        assertThat(operator.apply(Value.of(2), Value.of(3))).isTrue();
     }
 
     @Test
-    public void testGreaterThanOrEqualOperator() {
-        // If GREATER_THAN_OR_EQUAL exists, uncomment this test
-        // Operator operator = Operator.fromSymbol(">=");
-        // assertThat(operator).isEqualTo(Operator.GREATER_THAN_OR_EQUAL);
-        // assertThat(operator.apply(3, 3)).isTrue();
-    }
-
-    @Test
-    public void testLessThanOrEqualOperator() {
-        // If LESS_THAN_OR_EQUAL exists, uncomment this test
-        // Operator operator = Operator.fromSymbol("<=");
-        // assertThat(operator).isEqualTo(Operator.LESS_THAN_OR_EQUAL);
-        // assertThat(operator.apply(3, 3)).isTrue();
-    }
-
-    @Test
-    public void testLogicalAndOperator() {
+    void testLogicalAndOperator() {
         Operator operator = Operator.fromSymbol("and");
         assertThat(operator).isEqualTo(Operator.AND);
-        assertThat(operator.apply(true, true)).isTrue();
+        assertThat(operator.apply(Value.of(true), Value.of(true))).isTrue();
     }
 
     @Test
-    public void testLogicalOrOperator() {
+    void testLogicalOrOperator() {
         Operator operator = Operator.fromSymbol("or");
         assertThat(operator).isEqualTo(Operator.OR);
-        assertThat(operator.apply(true, false)).isTrue();
+        assertThat(operator.apply(Value.of(true), Value.of(false))).isTrue();
     }
 
     @Test
-    public void testUnknownOperator() {
+    void testUnknownOperator() {
         assertThatThrownBy(() -> Operator.fromSymbol("UNKNOWN"))
                 .isInstanceOf(OperatorException.class)
                 .hasMessageContaining("Unknown operator: UNKNOWN");
     }
     
     @Test
-    public void testEqualsOperatorSymbol() {
+    void testEqualsOperatorSymbol() {
         assertThat(Operator.EQUALS.getSymbol()).isEqualTo("=");
     }
     
     @Test
-    public void testNotEqualsOperatorSymbol() {
-        // If NOT_EQUALS exists, uncomment this test
-        // assertThat(Operator.NOT_EQUALS.getSymbol()).isEqualTo("!=");
-    }
-    
-    @Test
-    public void testGreaterThanOperatorSymbol() {
+    void testGreaterThanOperatorSymbol() {
         assertThat(Operator.GREATER_THAN.getSymbol()).isEqualTo(">");
     }
     
     @Test
-    public void testLessThanOperatorSymbol() {
+    void testLessThanOperatorSymbol() {
         assertThat(Operator.LESS_THAN.getSymbol()).isEqualTo("<");
     }
     
     @Test
-    public void testGreaterThanOrEqualOperatorSymbol() {
-        // If GREATER_THAN_OR_EQUAL exists, uncomment this test
-        // assertThat(Operator.GREATER_THAN_OR_EQUAL.getSymbol()).isEqualTo(">=");
-    }
-    
-    @Test
-    public void testLessThanOrEqualOperatorSymbol() {
-        // If LESS_THAN_OR_EQUAL exists, uncomment this test
-        // assertThat(Operator.LESS_THAN_OR_EQUAL.getSymbol()).isEqualTo("<=");
-    }
-    
-    @Test
-    public void testLogicalAndOperatorSymbol() {
+    void testLogicalAndOperatorSymbol() {
         assertThat(Operator.AND.getSymbol()).isEqualTo("and");
     }
     
     @Test
-    public void testLogicalOrOperatorSymbol() {
+    void testLogicalOrOperatorSymbol() {
         assertThat(Operator.OR.getSymbol()).isEqualTo("or");
     }
     
     @Test
-    public void testInvalidComparisonType() {
-        // The EQUALS operator in the actual implementation might handle strings differently
-        // Let's check if it throws an exception for non-numeric types in comparison operators
-        assertThatThrownBy(() -> Operator.GREATER_THAN.apply("string1", "string2"))
-                .isInstanceOf(OperatorException.class)
-                .hasMessageContaining("Operator > can only be applied to numbers");
+    void testInvalidComparisonType() {
+        assertThatThrownBy(() -> Operator.GREATER_THAN.apply(Value.of("string1"), Value.of("string2")))
+            .isInstanceOf(OperatorException.class)
+            .hasMessageContaining("Operator > can only be applied to numbers");
     }
     
     @Test
-    public void testInvalidNullComparisonGreaterThan() {
-        assertThatThrownBy(() -> Operator.GREATER_THAN.apply(null, 5))
-                .isInstanceOf(OperatorException.class)
-                .hasMessageContaining("Operator > can only be applied to numbers");
+    void testInvalidNullComparisonGreaterThan() {
+        assertThatThrownBy(() -> Operator.GREATER_THAN.apply(Value.of(null), Value.of(5)))
+            .isInstanceOf(OperatorException.class)
+            .hasMessageContaining("Operator > can only be applied to numbers");
     }
     
     @Test
-    public void testInvalidNullComparisonLessThan() {
-        assertThatThrownBy(() -> Operator.LESS_THAN.apply(5, null))
-                .isInstanceOf(OperatorException.class)
-                .hasMessageContaining("Operator < can only be applied to numbers");
+    void testInvalidNullComparisonLessThan() {
+        assertThatThrownBy(() -> Operator.LESS_THAN.apply(Value.of(5), Value.of(null)))
+            .isInstanceOf(OperatorException.class)
+            .hasMessageContaining("Operator < can only be applied to numbers");
     }
     
     @Test
-    public void testInvalidBooleanComparison() {
-        assertThatThrownBy(() -> Operator.GREATER_THAN.apply(true, false))
-                .isInstanceOf(OperatorException.class)
-                .hasMessageContaining("Operator > can only be applied to numbers");
+    void testInvalidBooleanComparison() {
+        assertThatThrownBy(() -> Operator.GREATER_THAN.apply(Value.of(true), Value.of(false)))
+            .isInstanceOf(OperatorException.class)
+            .hasMessageContaining("Operator > can only be applied to numbers");
     }
     
     @Test
-    public void testInvalidLogicalOperation() {
-        assertThatThrownBy(() -> Operator.AND.apply(1, 2))
-                .isInstanceOf(OperatorException.class)
-                .hasMessageContaining("Operator and can only be applied to booleans");
+    void testInvalidLogicalOperation() {
+        assertThatThrownBy(() -> Operator.AND.apply(Value.of(1), Value.of(2)))
+            .isInstanceOf(OperatorException.class)
+            .hasMessageContaining("Operator and can only be applied to booleans");
     }
     
     @Test
-    public void testInvalidNullLogicalOperation() {
-        assertThatThrownBy(() -> Operator.OR.apply(null, true))
-                .isInstanceOf(OperatorException.class)
-                .hasMessageContaining("Operator or can only be applied to booleans");
+    void testInvalidNullLogicalOperation() {
+        assertThatThrownBy(() -> Operator.OR.apply(Value.of(null), Value.of(true)))
+            .isInstanceOf(OperatorException.class)
+            .hasMessageContaining("Operator or can only be applied to booleans");
+    }
+    
+    @Test
+    void testEqualsWithNullValues() {
+        assertThat(Operator.EQUALS.apply(null, null)).isTrue();
+        assertThat(Operator.EQUALS.apply(Value.of("test"), null)).isFalse();
+        assertThat(Operator.EQUALS.apply(null, Value.of("test"))).isFalse();
     }
 } 

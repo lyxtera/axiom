@@ -1,0 +1,58 @@
+rulesetName: "Customer Discount Ruleset"
+rulesetDescription: "Rules for applying discounts to customers"
+
+businessChecks:
+  - name: isHighValueCustomer
+    description: Determines if the customer has high spending for the past N days
+    params:
+      - spendingThreshold
+      - days
+  - name: hasLoyaltyStatus
+    description: Checks if the customer has loyalty status
+    params:
+      - loyaltyLevel
+  - name: hasDaysSinceRegistration
+    description: Checks if the customer has been registered for a certain number of days
+    params:
+      - daysSinceRegistration
+  - name: totalSpend
+    description: Checks the total spend of the customer
+
+businessActions:
+  - name: applyDiscount
+    description: Applies a discount to the customer's order
+    params:
+      - percentage
+  - name: upgradeToVIP
+    description: Upgrades the customer to VIP status
+
+rules:
+  - name: "Increase price for high spenders"
+    description: "Increase price for high spenders"
+    expression: totalSpend() > 1000 then applyDiscount(-10)
+    priority: 1
+  
+  - name: "Upgrade VIP Customer Rule"
+    description: "Upgrade new customers with high spending to VIP"
+    expression: hasDaysSinceRegistration(30) and isHighValueCustomer(2000, 30) then upgradeToVIP()
+    priority: 5
+    effectiveFrom: "2023-03-01T00:00:00Z"
+
+  - name: "High Value Customer Rule"
+    description: "Apply discount for high value customers"
+    expression: isHighValueCustomer(1000, 30) then applyDiscount(10)
+    priority: 10
+    effectiveFrom: "2023-01-01T00:00:00Z"
+    
+  - name: "Loyalty Status Rule"
+    description: "Apply discount for customers with loyalty status"
+    expression: hasLoyaltyStatus(5) then applyDiscount(5)
+    priority: 20
+    effectiveFrom: "2023-06-01T00:00:00Z"
+    effectiveTo: "2023-07-01T00:00:00Z"
+    
+  - name: "Apply seasonal discount"
+    description: "Apply discount for customers with loyalty status"
+    expression: hasDaysSinceRegistration(1) then applyDiscount(3.5)
+    priority: 50
+    effectiveTo: "2027-07-01T00:00:00Z"

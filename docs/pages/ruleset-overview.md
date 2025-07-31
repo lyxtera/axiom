@@ -183,7 +183,7 @@ context.add(MyContextKey.TRANSACTION_AMOUNT, 5000.0);
 context.add(MyContextKey.RISK_SCORE, 95);
 
 // Execute the first matching rule
-RuleExecutionResult<MyContextKey> result = orchestrator.executeFirstMatch(context);
+RuleExecutionResult<MyContextKey> result = orchestrator.executeFirstMatchingRule(context);
 if (result.hasMatch()) {
     BusinessRule<MyContextKey> matchedRule = result.getMatchedRule();
     System.out.println("Rule applied: " + matchedRule.getName());
