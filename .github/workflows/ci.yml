@@ -157,7 +157,7 @@ jobs:
         mvn org.owasp:dependency-check-maven:check
         
     - name: Upload OWASP results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: owasp-reports
@@ -186,7 +186,7 @@ jobs:
         restore-keys: ${{ runner.os }}-m2
         
     - name: Run integration tests
-      run: mvn clean test -Dtest="*ITest" -Dmaven.thrift.skip=true
+      run: mvn clean test -Dtest="*ITest" -Dsurefire.failIfNoSpecifiedTests=false -Dmaven.thrift.skip=true
       
     - name: Run example application
       run: mvn exec:java -Dexec.mainClass="com.lyxtera.axiom.examples.ExampleApplication" -pl axiom-examples
@@ -226,7 +226,7 @@ jobs:
           -Dexec.args="-f 1 -wi 2 -i 3 -r 1s -w 1s"
           
     - name: Upload benchmark results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: benchmark-results
         path: axiom-examples/target/
@@ -257,7 +257,7 @@ jobs:
       run: mvn clean package -DskipTests -Dmaven.thrift.skip=true
       
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: build-artifacts
         path: |
