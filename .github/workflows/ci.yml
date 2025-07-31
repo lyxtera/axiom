@@ -157,7 +157,7 @@ jobs:
       run: mvn clean test -Dtest="*ITest" -Dsurefire.failIfNoSpecifiedTests=false -Dmaven.thrift.skip=true
       
     - name: Compile example application
-      run: mvn install -pl axiom-rules -DskipTests -Dmaven.thrift.skip=true && mvn install -pl axiom-codegen -DskipTests -Dmaven.thrift.skip=true && mvn compile -pl axiom-examples -Dmaven.thrift.skip=true
+      run: mvn install -pl axiom-rules -DskipTests -Dmaven.thrift.skip=true -Djacoco.skip=true -Dmaven.jacoco.skip=true && mvn install -pl axiom-codegen -DskipTests -Dmaven.thrift.skip=true -Djacoco.skip=true -Dmaven.jacoco.skip=true && mvn compile -pl axiom-examples -Dmaven.thrift.skip=true
       
     - name: Run example application
       run: mvn exec:java -Dexec.mainClass="com.lyxtera.axiom.examples.ExampleApplication" -pl axiom-examples
