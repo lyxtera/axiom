@@ -1,6 +1,7 @@
 # Axiom - Lightweight Rule Engine for Java
 
-[![Build Status](https://github.com/lyxtera/axiom/workflows/CI/badge.svg)](https://github.com/lyxtera/axiom/actions)
+[![Build Status](https://github.com/lyxtera/axiom/actions/workflows/ci.yml/badge.svg)](https://github.com/lyxtera/axiom/actions/workflows/ci.yml)
+
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.lyxtera/axiom-parent/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.lyxtera/axiom-parent)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Test Coverage](https://img.shields.io/badge/coverage-70%25-brightgreen.svg)]()
