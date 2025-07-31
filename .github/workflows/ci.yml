@@ -161,7 +161,7 @@ jobs:
       if: always()
       with:
         name: owasp-reports
-        path: target/dependency-check-report.html
+        path: "**/target/dependency-check-report.html"
 
   integration-test:
     name: Integration Tests
@@ -187,6 +187,9 @@ jobs:
         
     - name: Run integration tests
       run: mvn clean test -Dtest="*ITest" -Dsurefire.failIfNoSpecifiedTests=false -Dmaven.thrift.skip=true
+      
+    - name: Compile example application
+      run: mvn compile -pl axiom-examples -Dmaven.thrift.skip=true
       
     - name: Run example application
       run: mvn exec:java -Dexec.mainClass="com.lyxtera.axiom.examples.ExampleApplication" -pl axiom-examples
@@ -215,7 +218,7 @@ jobs:
         restore-keys: ${{ runner.os }}-m2
         
     - name: Compile benchmark
-      run: mvn test-compile -pl axiom-examples -Dmaven.thrift.skip=true
+      run: mvn compile test-compile -pl axiom-examples -Dmaven.thrift.skip=true
       
     - name: Run performance benchmarks
       run: |
