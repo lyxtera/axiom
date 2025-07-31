@@ -94,7 +94,7 @@ public class HighValueOrderCheck implements BusinessCheck<OrderContextKey> {
     @Override
     public Value execute(RuleContext<OrderContextKey> context, @Arg("threshold") Value threshold) {
         Double orderAmount = context.getRequired(OrderContextKey.ORDER_AMOUNT, Double.class);
-        Double thresholdValue = threshold.asDouble();
+        Double thresholdValue = threshold.asNumber().doubleValue();
         return Value.of(orderAmount > thresholdValue);
     }
 }
@@ -110,7 +110,7 @@ public class ApplyDiscountAction implements BusinessAction<OrderContextKey> {
     @Override
     public Value execute(RuleContext<OrderContextKey> context, @Arg("percent") Value percent) {
         Double orderAmount = context.getRequired(OrderContextKey.ORDER_AMOUNT, Double.class);
-        Double discountPercent = percent.asDouble();
+        Double discountPercent = percent.asNumber().doubleValue();
         
         Double discountedAmount = orderAmount * (1 - (discountPercent / 100));
         context.add(OrderContextKey.ORDER_AMOUNT, discountedAmount);

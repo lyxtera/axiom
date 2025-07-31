@@ -1,5 +1,12 @@
 package com.lyxtera.axiom.api.model;
 
+import static com.lyxtera.axiom.api.exception.AxiomEngineException.MSG_UNSUPPORTED_VALUE_TYPE;
+
+import java.math.BigDecimal;
+import java.util.Objects;
+
+import com.lyxtera.axiom.api.exception.AxiomEngineException;
+
 /**
  * Represents a value in a business rule expression.
  * Values can be literals (string, number, boolean)
@@ -8,43 +15,51 @@ public class Value {
 
     public enum Type {
         STRING,
-        INTEGER,
-        DECIMAL,
+        NUMBER,
         BOOLEAN
     }
 
     public static final Value EMPTY = new Value(null, Type.STRING);
     
-    private final Object value;
+    private final String value;
     private final Type type;
     
-    public Value(Object value, Type type) {
+    public Value(String value, Type type) {
         this.value = value;
         this.type = type;
     }
     
     public Object getValue() {
-        return value;
+        switch (type) {
+            case STRING:
+                return asString();
+            case NUMBER:
+                return asNumber();
+            case BOOLEAN:
+                return asBoolean(); 
+            default:
+                return value;
+        }
     }
 
-    public Integer asInteger() {
-        return (Integer) value  ;
-    }
+    public BigDecimal asNumber() {
+        if (value == null) {
+            return BigDecimal.ZERO;
+        }
 
-    public Double asDouble() {
-        return (Double) value;
+        return new BigDecimal(value);
     }
 
     public Boolean asBoolean() {
-        return (Boolean) value;
+        if (value == null) {
+            return false;
+        }
+
+        return Boolean.valueOf(value);
     }
 
     public String asString() {
-        return (String) value;
-    }
-
-    public Long asLong() {
-        return (Long) value;
+        return Objects.toString(value);
     }
     
     public Type getType() {
@@ -57,21 +72,19 @@ public class Value {
      * @param source The object to convert to a Value
      * @return A new Value instance with the appropriate type for the given object
      */
-    public static Value fromObject(Object source) {
+    public static Value of(Object source) {
         if (source == null) {
             return EMPTY;
         }
 
         if (source instanceof String) {
-            return new Value(source, Type.STRING);
-        } else if (source instanceof Integer || source instanceof Long) {
-            return new Value(source, Type.INTEGER);
-        } else if (source instanceof Float || source instanceof Double) {
-            return new Value(source, Type.DECIMAL);
-        } else if (source instanceof Boolean) {
-            return new Value(source, Type.BOOLEAN);
-        } else {
             return new Value(source.toString(), Type.STRING);
+        } else if (source instanceof Boolean) {
+            return new Value(source.toString(), Type.BOOLEAN);
+        } else if (source instanceof Number) {
+            return new Value(source.toString(), Type.NUMBER);
+        } else {
+            throw AxiomEngineException.of(MSG_UNSUPPORTED_VALUE_TYPE, source.getClass().getName(), source);
         }
     }
     
@@ -82,4 +95,19 @@ public class Value {
         }
         return String.valueOf(value);
     }
+
+    @Override
+    public boolean equals(Object that) {
+        if (this == that) {
+            return true;
+        }
+
+        if (that == null || !(that instanceof Value)) {
+            return false;
+        }
+
+        Value other = (Value) that;
+        return Objects.equals(getValue(), other.getValue()) && getType() == other.getType();
+    }
+    
 } 

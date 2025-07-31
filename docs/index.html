@@ -62,6 +62,10 @@
 <li><a href="#rule-orchestrator-operations" class="left-toc-h2">Rule Orchestrator Operations</a></li>
 </ul>
 </ul>
+<div class="section-heading">Integration & Frameworks</div>
+<ul>
+<li><a href="#rule-orchestrator-injection">Spring Boot Integration</a></li>
+</ul>
 <div class="section-heading">Testing & Best Practices</div>
 <ul>
 <li><a href="#rule-testing">Rule Testing</a></li>
@@ -74,20 +78,46 @@
 <h2>Introduction & Overview</h2>
 <section id="introduction" class="content-section">
 <h1>Introduction to Axiom Business Rules</h1>
-<p>Welcome to the Axiom Business Rules Developer Guide. This comprehensive documentation will help you understand, develop, and maintain business rules within the Axiom framework.</p>
 <h2>What is Axiom?</h2>
-<p>Axiom provides a framework for implementing business rules in a way that separates them from your core application logic. This separation makes rules more maintainable, testable, and accessible to business stakeholders. The framework is designed to be:</p>
+<p>Axiom is a lightweight rule engine designed to simplify complex “if-this-then-that” business logic. In real-world applications—especially microservices and modular systems—developers often end up with conditionals scattered throughout their codebase. Over time, these if-else chains become fragile, difficult to maintain, and nearly impossible to extend without risking regressions. Larger, enterprise-grade rule engines can solve this, but they’re often too heavyweight for everyday needs.</p>
+<hr />
+<h2>How Axiom Helps</h2>
 <ul>
-<li><strong>Flexible</strong>: Rules can be loaded from various sources, including YAML files or databases</li>
-<li><strong>Type-safe</strong>: Uses Java generics to provide strong typing for rule contexts</li>
-<li><strong>Thread-safe</strong>: Supports concurrent rule evaluation across multiple threads</li>
-<li><strong>Extensible</strong>: Allows custom business checks and actions to be implemented and registered</li>
+<li>
+<p><strong>Lightweight, Focused Rule Engine</strong><br />
+  Axiom doesn’t pretend to solve every rule-related problem but focuses on making common patterns like “if X then do Y” easier and more maintainable, without requiring hours of configuration or specialized DSLs.</p>
+</li>
+<li>
+<p><strong>Separation of Concerns</strong><br />
+  By extracting business rules into discrete “axioms,” you keep your logic out of tangled if-else blocks. That separation makes rules easier to read, reason about, and modify—no more rummaging through complex conditional trees.</p>
+</li>
+<li>
+<p><strong>Extensible &amp; Modular</strong><br />
+  Axiom’s approach to rules is modular: you can add, remove, or update them without rewriting core code. This makes it simpler to support new features or business changes.</p>
+</li>
+<li>
+<p><strong>Simplicity</strong><br />
+  You don’t have to install a large, enterprise-grade rules server or learn a complicated syntax. Axiom’s API aims for clarity and minimal overhead, so teams can adopt it quickly.</p>
+</li>
 </ul>
-<p>Axiom is particularly useful for systems that need to apply complex business rules that may change frequently or require business stakeholder input.</p>
-<h2>Key Benefits</h2>
-<h3>Separation of Concerns</h3>
-<p>Business rules are maintained separately from application code, allowing business analysts and developers to work collaboratively. Rules are stored in YAML files that can be managed independently of the application code.</p>
-<pre><code class="language-yaml">rules:
+<hr />
+<h2>Where Axiom Fits In Your Architecture</h2>
+<p>Consider how often you need to write logic like:</p>
+<pre><code class="language-java">if (order.isPriority() &amp;&amp; !order.isFlagged()) {
+    // expedite shipping
+} else if (order.isInternational()) {
+    // handle customs
+} else if (order.hasGiftWrap()) {
+    // ...
+}
+## Key Benefits
+
+### Separation of Concerns
+
+Business rules are maintained separately from application code, allowing business analysts and developers to work collaboratively. Rules are stored in YAML files that can be managed independently of the application code.
+
+```yaml
+rules:
   - name: &quot;High Risk Score Rule&quot;
     description: &quot;Block requests with very high risk scores&quot;
     expression: hasRiskScore(90) then blockRequest()
@@ -98,7 +128,7 @@
 <p>Rules can be modified without redeploying the entire application. The rule engine can load rule definitions from various sources including file systems and databases. You can update business logic by simply modifying YAML files.</p>
 <h3>Traceability</h3>
 <p>Each decision made by the system can be traced back to specific rules. Axiom provides detailed execution results including which rules were evaluated and why they matched or didn't match.</p>
-<pre><code class="language-java">RuleExecutionResult&lt;TestCtxKey&gt; result = orchestrator.executeFirstMatch(context);
+<pre><code class="language-java">RuleExecutionResult&lt;TestCtxKey&gt; result = orchestrator.executeFirstMatchingRule(context);
 if (result.hasMatch()) {
     BusinessRule&lt;TestCtxKey&gt; matchedRule = result.getMatchedRule();
     System.out.println(&quot;Rule applied: &quot; + matchedRule.getName());
@@ -114,14 +144,15 @@ void testFraudSignalsRule() {
     context.add(TestCtxKey.HAS_FRAUD_SIGNALS, true);
 
     RuleExecutionResult&lt;TestCtxKey&gt; result = 
-        fraudDetectionOrchestrator.executeFirstMatch(context);
+        fraudDetectionOrchestrator.executeFirstMatchingRule(context);
 
     assertThat(result.hasMatch()).isTrue();
     assertThat(result.getMatchedRule().getName()).isEqualTo(&quot;Fraud Detection Rule&quot;);
 }
-</code></pre>
-<h2>Purpose of This Guide</h2>
-<p>This developer guide aims to provide you with:</p>
+</code></pre></section>
+<section id="getting-started" class="content-section">
+<h1>Getting Started with Axiom Business Rules</h1>
+<p>This guide aims to provide you with:</p>
 <ol>
 <li>A clear understanding of Axiom business rules concepts</li>
 <li>Step-by-step instructions for creating and testing rules</li>
@@ -129,25 +160,23 @@ void testFraudSignalsRule() {
 <li>Real-world examples based on actual implementations</li>
 <li>Troubleshooting tips</li>
 </ol>
-<h2>Target Audience</h2>
-<p>This guide is designed for:</p>
-<ul>
-<li><strong>Developers</strong> working with the Axiom framework</li>
-<li><strong>Business Analysts</strong> who need to understand how business logic is implemented</li>
-<li><strong>QA Engineers</strong> responsible for testing rule-based systems</li>
-<li><strong>System Architects</strong> designing solutions using business rules engines</li>
-</ul>
 <h2>Architecture Overview</h2>
-<p>Axiom is built on a flexible architecture with the following key components:</p>
+<h3>Business Rule</h3>
+<p>A “rule” is a small, self-contained piece of logic that says: “When certain conditions are met, perform these action(s).”
+Each rule has two main parts:
+- Condition(s) – A Boolean check (or set of checks combined using logical operators) that determins if the rule should fire.
+- Action(s) – One or more pieces of code to execute when the conditions evaluate to true.</p>
 <h3>Rule Sets</h3>
-<p>Collections of business rules with metadata and priority. Rule sets group related rules together and maintain rule priority ordering. They are typically loaded from YAML files.</p>
+<p>Collections of business rules combined with metadata and priority. Rule-sets group related rules together and maintain rule priority ordering. By default loaded from YAML files.</p>
+<h3>Rule Parser</h3>
+<p>Converts rule definitions to executable objects. The rule parser interprets the rule expressions and creates the appropriate Java objects.</p>
 <h3>Business Checks</h3>
-<p>Functions that evaluate conditions. Business checks are implemented as Java classes that implement the <code>BusinessCheck&lt;K&gt;</code> interface. They can take parameters and return boolean values indicating whether a condition is met.</p>
+<p>Functions that represent declared conditions and are implemented as the <code>BusinessCheck&lt;K&gt;</code> interface. They can take (0..N) parameters and return <code>Value</code> objects of the type <code>Value.Type.BOOLEAN</code> indicating whether a condition is met.</p>
 <pre><code class="language-java">@RuleMetadata(name = &quot;hasRiskScore&quot;, description = &quot;Checks if the risk score is above a specified threshold&quot;)
 public class HasRiskScoreCheck implements BusinessCheck&lt;ContextKey&gt; {
     public Value execute(RuleContext&lt;ContextKey&gt; context, @Arg(&quot;threshold&quot;) Value threshold) {
         Integer riskScore = context.getRequired(ContextKey.RISK_SCORE, Integer.class);
-        Integer thresholdValue = threshold.asInteger();
+        Integer thresholdValue = threshold.asNumber().intValue();
         return Value.of(riskScore &gt;= thresholdValue);
     }
 }
@@ -172,18 +201,13 @@ context.add(ContextKey.TRANSACTION_AMOUNT, 9999.99);
 <h3>Rule Orchestrator</h3>
 <p>Coordinates rule evaluation and execution. The rule orchestrator applies rules from a rule set against a given context and provides methods to execute rules and retrieve results.</p>
 <pre><code class="language-java">RuleOrchestrator&lt;ContextKey&gt; orchestrator = new RuleOrchestrator&lt;&gt;(ruleSet);
-RuleExecutionResult&lt;ContextKey&gt; result = orchestrator.executeFirstMatch(context);
+RuleExecutionResult&lt;ContextKey&gt; result = orchestrator.executeFirstMatchingRule(context);
 </code></pre>
-<h3>Rule Parser</h3>
-<p>Converts rule definitions from YAML to executable objects. The rule parser interprets the rule expressions in YAML files and creates the appropriate Java objects.</p>
 <p>This modular design allows for flexible integration with existing Java applications using dependency injection frameworks like Guice.</p>
 <h2>How to Use This Guide</h2>
 <p>The guide is organized in a logical progression, starting with basic concepts and moving toward more advanced topics. If you're new to Axiom, we recommend starting with the Getting Started section. Experienced users may want to jump directly to specific topics using the navigation menu.</p>
 <p>Each section includes practical examples based on real-world use cases and actual implementations of the Axiom framework.</p>
-<p>Let's begin your journey with Axiom Business Rules!</p></section>
-<section id="getting-started" class="content-section">
-<h1>Getting Started with Axiom Business Rules</h1>
-<p>This guide will help you set up and start using the Axiom Business Rules framework in your Java application. We'll cover the basic steps to integrate Axiom, create your first rule set, and execute rules.</p>
+<p>Let's begin your journey with Axiom Business Rules!</p>
 <h2>Prerequisites</h2>
 <p>Before you begin, ensure you have the following:</p>
 <ul>
@@ -196,8 +220,8 @@ RuleExecutionResult&lt;ContextKey&gt; result = orchestrator.executeFirstMatch(co
 <p>Add the Axiom dependency to your <code>pom.xml</code>:</p>
 <pre><code class="language-xml">&lt;dependency&gt;
     &lt;groupId&gt;com.lyxtera&lt;/groupId&gt;
-    &lt;artifactId&gt;axiom&lt;/artifactId&gt;
-    &lt;version&gt;1.0.0&lt;/version&gt;
+    &lt;artifactId&gt;axiom-rules&lt;/artifactId&gt;
+    &lt;version&gt;1.0.1&lt;/version&gt;
 &lt;/dependency&gt;
 
 &lt;!-- Guice for dependency injection --&gt;
@@ -210,7 +234,7 @@ RuleExecutionResult&lt;ContextKey&gt; result = orchestrator.executeFirstMatch(co
 <h3>Gradle</h3>
 <p>Add the Axiom dependency to your <code>build.gradle</code>:</p>
 <pre><code class="language-groovy">dependencies {
-    implementation 'com.lyxtera:axiom:1.0.0'
+    implementation 'com.lyxtera:axiom-rules:1.0.1'
     implementation 'com.google.inject:guice:5.1.0'
 }
 </code></pre>
@@ -247,7 +271,7 @@ public class HighValueOrderCheck implements BusinessCheck&lt;OrderContextKey&gt;
     @Override
     public Value execute(RuleContext&lt;OrderContextKey&gt; context, @Arg(&quot;threshold&quot;) Value threshold) {
         Double orderAmount = context.getRequired(OrderContextKey.ORDER_AMOUNT, Double.class);
-        Double thresholdValue = threshold.asDouble();
+        Double thresholdValue = threshold.asNumber().doubleValue();
         return Value.of(orderAmount &gt; thresholdValue);
     }
 }
@@ -262,7 +286,7 @@ public class ApplyDiscountAction implements BusinessAction&lt;OrderContextKey&gt
     @Override
     public Value execute(RuleContext&lt;OrderContextKey&gt; context, @Arg(&quot;percent&quot;) Value percent) {
         Double orderAmount = context.getRequired(OrderContextKey.ORDER_AMOUNT, Double.class);
-        Double discountPercent = percent.asDouble();
+        Double discountPercent = percent.asNumber().doubleValue();
 
         Double discountedAmount = orderAmount * (1 - (discountPercent / 100));
         context.add(OrderContextKey.ORDER_AMOUNT, discountedAmount);
@@ -357,7 +381,7 @@ rules:
         context.add(OrderContextKey.IS_REPEAT_CUSTOMER, isRepeatCustomer(order.getCustomerId()));
 
         // Execute all matching rules
-        RuleExecutionResult&lt;OrderContextKey&gt; result = discountOrchestrator.executeAllMatches(context);
+        RuleExecutionResult&lt;OrderContextKey&gt; result = discountOrchestrator.executeAllMatchingRules(context);
 
         // Update the order with the potentially modified amount
         if (result.hasMatches()) {
@@ -708,7 +732,7 @@ context.add(MyContextKey.TRANSACTION_AMOUNT, 5000.0);
 context.add(MyContextKey.RISK_SCORE, 95);
 
 // Execute the first matching rule
-RuleExecutionResult&lt;MyContextKey&gt; result = orchestrator.executeFirstMatch(context);
+RuleExecutionResult&lt;MyContextKey&gt; result = orchestrator.executeFirstMatchingRule(context);
 if (result.hasMatch()) {
     BusinessRule&lt;MyContextKey&gt; matchedRule = result.getMatchedRule();
     System.out.println(&quot;Rule applied: &quot; + matchedRule.getName());
@@ -994,111 +1018,176 @@ rules:
 </ul></section>
 <section id="code-generation" class="content-section">
 <h1>Code Generation</h1>
-<p>This page describes how to use the code generation tools provided by Axiom to generate Java stub classes for business checks and actions from YAML rule set files.</p>
-<h2>RuleStubGenerator</h2>
-<p>The <code>RuleStubGenerator</code> is a utility class that reads Axiom rule set YAML files and generates Java stub classes for the business checks and actions defined in those files. These generated classes provide a starting point for implementing your business logic.</p>
-<h3>Command Line Usage</h3>
-<p>You can run the <code>RuleStubGenerator</code> directly from the command line using the following syntax:</p>
-<pre><code class="language-bash">java -cp my-classpath com.lyxtera.axiom.codegen.RuleStubGenerator \
-  --basePackage=com.example.rules \
-  --outputDirectory=src/main/java \
-  --ruleSet=src/main/resources/rule-set1.yaml \
-  --ruleSet=src/main/resources/rule-set2.yaml \
-  --overwriteExisting=true
-</code></pre>
-<h3>Configuration Parameters</h3>
-<p>The <code>RuleStubGenerator</code> accepts the following command-line arguments:</p>
-<ul>
-<li><code>--basePackage=&lt;package&gt;</code>: Base package for generated classes (required)</li>
-<li><code>--outputDirectory=&lt;dir&gt;</code>: Output directory (default: src/main/java)</li>
-<li><code>--ruleSet=&lt;path&gt;</code>: Path to rule set YAML file (can be specified multiple times)</li>
-<li><code>--overwriteExisting=&lt;true|false&gt;</code>: Whether to overwrite existing files (default: false)</li>
-</ul>
-<h2>Maven Integration</h2>
-<p>To integrate the <code>RuleStubGenerator</code> into your Maven build process, you can use the <code>exec-maven-plugin</code> to run the generator during the build. This approach allows you to automatically generate stub classes whenever you build your project.</p>
-<p>Add the following plugin configuration to your POM file:</p>
+<p>This page describes how to use the code generation maven plugin to generate Java stub classes for business checks and actions from the YAML rule-set files.</p>
+<h2>Axiom Codegen Maven Plugin</h2>
+<p>The <code>axiom-codegen</code> Maven plugin provides a simple way to generate Java stub classes for your business checks and actions defined in Axiom rule set YAML files. This plugin will automatically:</p>
+<ol>
+<li>Generate Java classes for all business checks and actions in your rule set YAML files</li>
+<li>Place them in appropriate packages based on your configuration</li>
+<li>Add the generated sources to your project's compilation path</li>
+</ol>
+<h3>Adding the Plugin to Your Project</h3>
+<p>To use the axiom-codegen plugin in your project, add the following configuration to your <code>pom.xml</code> file:</p>
 <pre><code class="language-xml">&lt;plugin&gt;
-    &lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
-    &lt;artifactId&gt;exec-maven-plugin&lt;/artifactId&gt;
-    &lt;version&gt;3.1.0&lt;/version&gt;
+    &lt;groupId&gt;com.lyxtera&lt;/groupId&gt;
+    &lt;artifactId&gt;axiom-codegen&lt;/artifactId&gt;
+    &lt;version&gt;${axiom.version}&lt;/version&gt;
     &lt;executions&gt;
         &lt;execution&gt;
-            &lt;id&gt;generate-rule-stubs&lt;/id&gt;
-            &lt;phase&gt;generate-sources&lt;/phase&gt;
+            &lt;id&gt;generate-stubs&lt;/id&gt;
             &lt;goals&gt;
-                &lt;goal&gt;java&lt;/goal&gt;
+                &lt;goal&gt;generate-stubs&lt;/goal&gt;
             &lt;/goals&gt;
             &lt;configuration&gt;
-                &lt;mainClass&gt;com.lyxtera.axiom.codegen.RuleStubGenerator&lt;/mainClass&gt;
-                &lt;arguments&gt;
-                    &lt;argument&gt;--basePackage=com.example.rules&lt;/argument&gt;
-                    &lt;argument&gt;--outputDirectory=src/main/java&lt;/argument&gt;
-                    &lt;argument&gt;--ruleSet=src/main/resources/rule-set1.yaml&lt;/argument&gt;
-                    &lt;argument&gt;--ruleSet=src/main/resources/rule-set2.yaml&lt;/argument&gt;
-                    &lt;argument&gt;--overwriteExisting=false&lt;/argument&gt;
-                &lt;/arguments&gt;
-                &lt;includePluginDependencies&gt;true&lt;/includePluginDependencies&gt;
+                &lt;packageName&gt;com.example.rules&lt;/packageName&gt;
+                &lt;contextKeyEnum&gt;com.example.rules.MyContextKey&lt;/contextKeyEnum&gt;
+                &lt;ruleSets&gt;${project.basedir}/src/main/resources/my_ruleset.yaml&lt;/ruleSets&gt;
+                &lt;outputDirectory&gt;src/main/java/&lt;/outputDirectory&gt;
+                &lt;overwriteExisting&gt;true&lt;/overwriteExisting&gt;
+                &lt;skip&gt;false&lt;/skip&gt;
             &lt;/configuration&gt;
         &lt;/execution&gt;
     &lt;/executions&gt;
-    &lt;dependencies&gt;
-        &lt;dependency&gt;
-            &lt;groupId&gt;com.lyxtera&lt;/groupId&gt;
-            &lt;artifactId&gt;axiom&lt;/artifactId&gt;
-            &lt;version&gt;${axiom.version}&lt;/version&gt;
-        &lt;/dependency&gt;
-    &lt;/dependencies&gt;
 &lt;/plugin&gt;
 </code></pre>
-<h3>Adding Generated Sources to Build</h3>
-<p>To ensure that the generated Java classes are included in the compilation process, you'll need to add the output directory to the build path. You can do this using the <code>build-helper-maven-plugin</code>:</p>
+<h3>Plugin Configuration Parameters</h3>
+<p>The plugin accepts the following configuration parameters:</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Property</th>
+<th>Description</th>
+<th>Default</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>packageName</code></td>
+<td><code>axiom.stubs.package</code></td>
+<td>Base package for generated classes</td>
+<td>-</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>contextKeyEnum</code></td>
+<td><code>axiom.stubs.contextKeyEnum</code></td>
+<td>Fully qualified name of the context enum class</td>
+<td>-</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>ruleSets</code></td>
+<td><code>axiom.stubs.ruleSets</code></td>
+<td>Comma-separated list of rule set YAML files to process</td>
+<td>-</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>outputDirectory</code></td>
+<td><code>axiom.stubs.outputDirectory</code></td>
+<td>Directory to output generated sources to</td>
+<td><code>${project.build.directory}/generated-sources/axiom</code></td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>overwriteExisting</code></td>
+<td><code>axiom.stubs.overwriteExisting</code></td>
+<td>Whether to overwrite existing files</td>
+<td><code>false</code></td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>skip</code></td>
+<td><code>axiom.stubs.skip</code></td>
+<td>Skip the rule stub generation</td>
+<td><code>false</code></td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<h3>Example Configuration</h3>
+<p>Here's a complete example from the <code>axiom-examples</code> project:</p>
 <pre><code class="language-xml">&lt;plugin&gt;
-    &lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
-    &lt;artifactId&gt;build-helper-maven-plugin&lt;/artifactId&gt;
-    &lt;version&gt;3.3.0&lt;/version&gt;
+    &lt;groupId&gt;com.lyxtera&lt;/groupId&gt;
+    &lt;artifactId&gt;axiom-codegen&lt;/artifactId&gt;
+    &lt;version&gt;${project.version}&lt;/version&gt;
     &lt;executions&gt;
         &lt;execution&gt;
-            &lt;id&gt;add-source&lt;/id&gt;
+            &lt;id&gt;generate-axiom-stubs&lt;/id&gt;
             &lt;phase&gt;generate-sources&lt;/phase&gt;
             &lt;goals&gt;
-                &lt;goal&gt;add-source&lt;/goal&gt;
+                &lt;goal&gt;generate-stubs&lt;/goal&gt;
             &lt;/goals&gt;
             &lt;configuration&gt;
-                &lt;sources&gt;
-                    &lt;source&gt;src/main/java&lt;/source&gt;
-                &lt;/sources&gt;
+                &lt;packageName&gt;com.lyxtera.axiom.examples.rules&lt;/packageName&gt;
+                &lt;contextKeyEnum&gt;com.lyxtera.axiom.examples.rules.CustomerContextKey&lt;/contextKeyEnum&gt;
+                &lt;ruleSets&gt;${project.basedir}/src/main/resources/customer_discount_ruleset.yaml&lt;/ruleSets&gt;
+                &lt;outputDirectory&gt;src/main/java/&lt;/outputDirectory&gt;
+                &lt;overwriteExisting&gt;true&lt;/overwriteExisting&gt;
+                &lt;skip&gt;false&lt;/skip&gt;
             &lt;/configuration&gt;
+        &lt;/execution&gt;
+    &lt;/executions&gt;
+&lt;/plugin&gt;
+</code></pre>
+<p>This configuration will process the <code>customer_discount_ruleset.yaml</code> file and generate Java stub classes in the <code>com.lyxtera.axiom.examples.rules</code> package.</p>
+<h3>Using Properties in Configuration</h3>
+<p>You can also use Maven properties to configure the plugin, making it easier to manage configurations across different environments:</p>
+<pre><code class="language-xml">&lt;properties&gt;
+    &lt;axiom.stubs.skip&gt;false&lt;/axiom.stubs.skip&gt;
+    &lt;axiom.stubs.package&gt;com.example.rules&lt;/axiom.stubs.package&gt;
+    &lt;axiom.stubs.contextKeyEnum&gt;com.example.rules.MyContextKey&lt;/axiom.stubs.contextKeyEnum&gt;
+&lt;/properties&gt;
+
+&lt;plugin&gt;
+    &lt;groupId&gt;com.lyxtera&lt;/groupId&gt;
+    &lt;artifactId&gt;axiom-codegen&lt;/artifactId&gt;
+    &lt;version&gt;${axiom.version}&lt;/version&gt;
+    &lt;executions&gt;
+        &lt;execution&gt;
+            &lt;id&gt;generate-axiom-stubs&lt;/id&gt;
+            &lt;phase&gt;generate-sources&lt;/phase&gt;
+            &lt;goals&gt;
+                &lt;goal&gt;generate-stubs&lt;/goal&gt;
+            &lt;/goals&gt;
         &lt;/execution&gt;
     &lt;/executions&gt;
 &lt;/plugin&gt;
 </code></pre>
 <h2>Generated Code Structure</h2>
-<p>The <code>RuleStubGenerator</code> creates two types of stub classes:</p>
+<p>The <code>axiom-codegen</code> plugin creates two types of stub classes:</p>
 <ol>
 <li><strong>Business Check Classes</strong> - Placed in the <code>checks</code> package under your base package</li>
 <li><strong>Business Action Classes</strong> - Placed in the <code>actions</code> package under your base package</li>
 </ol>
 <p>For example, given the following YAML ruleset:</p>
-<pre><code class="language-yaml">rulesetName: &quot;High Value Approval Ruleset&quot;
-rulesetDescription: &quot;Rules for determining whether suspensions require approval for high-value accounts&quot;
+<pre><code class="language-yaml">rulesetName: &quot;Customer Discount Ruleset&quot;
+rulesetDescription: &quot;Rules for applying discounts to customers&quot;
 
 businessChecks:
-  - name: isEnterpriseCompany
-    description: Determines if the organization is classified as an enterprise company
-  - name: hasRevenueAboveThreshold
-    description: Checks if the company's revenue is above a specified threshold
+  - name: isHighValueCustomer
+    description: Determines if the customer has high spending for the past N days
     params:
-      - thresholdAmount
+      - spendingThreshold
+      - days
+  - name: hasLoyaltyStatus
+    description: Checks if the customer has loyalty status
+    params:
+      - loyaltyLevel
 
 businessActions:
-  - name: requireApproval
-    description: Marks the suspension decision as requiring manual approval before proceeding
+  - name: applyDiscount
+    description: Applies a discount to the customer's order
+    params:
+      - percentage
 </code></pre>
 <p>The generator will create the following Java classes:</p>
 <ol>
-<li><code>com.example.rules.checks.IsEnterpriseCompanyCheck.java</code></li>
-<li><code>com.example.rules.checks.HasRevenueAboveThresholdCheck.java</code></li>
-<li><code>com.example.rules.actions.RequireApprovalAction.java</code></li>
+<li><code>com.example.rules.checks.IsHighValueCustomerCheck.java</code></li>
+<li><code>com.example.rules.checks.HasLoyaltyStatusCheck.java</code></li>
+<li><code>com.example.rules.actions.ApplyDiscountAction.java</code></li>
 </ol>
 <p>Each generated class includes:</p>
 <ul>
@@ -1392,15 +1481,15 @@ isHighValueOrder(5000) and (not hasApproval() or isNewCustomer()) then requireMa
 <li>For each rule (in priority order):
    a. The condition is evaluated against the context
    b. If the condition is true, the rule's actions are executed
-   c. For <code>executeFirstMatch()</code>, processing stops after the first match
-   d. For <code>executeAllMatches()</code>, all matching rules are processed</li>
+   c. For <code>executeFirstMatchingRule()</code>, processing stops after the first match
+   d. For <code>executeAllMatchingRules()</code>, all matching rules are processed</li>
 </ol>
 <p>Here's a sequence diagram illustrating the rule evaluation process:</p>
 <pre><code>┌─────────┐          ┌────────────────┐          ┌────────┐          ┌───────────────┐
 │ Service │          │ RuleOrchestrator│          │ RuleSet│          │ BusinessRule  │
 └────┬────┘          └───────┬─────────┘          └───┬────┘          └───────┬───────┘
      │                       │                        │                       │
-     │ executeFirstMatch(ctx)│                        │                       │
+     │ executeFirstMatchingRule(ctx)│                        │                       │
      │──────────────────────&gt;│                        │                       │
      │                       │                        │                       │
      │                       │ getRulesInPriorityOrder│                       │
@@ -1470,7 +1559,7 @@ isHighValueOrder(5000) and (not hasApproval() or isNewCustomer()) then requireMa
 <h2>Working with Rule Results</h2>
 <p>When rules are executed, they produce a <code>RuleExecutionResult</code> that contains information about which rules matched and the final state of the context:</p>
 <pre><code class="language-java">// Execute all matching rules
-RuleExecutionResult&lt;MyContextKey&gt; result = orchestrator.executeAllMatches(context);
+RuleExecutionResult&lt;MyContextKey&gt; result = orchestrator.executeAllMatchingRules(context);
 
 // Check if any rules matched
 if (result.hasMatches()) {
@@ -1561,15 +1650,15 @@ context.add(MyContextKey.RISK_SCORE, 95);
 context.add(MyContextKey.IS_NEW_CUSTOMER, true);
 
 // Execute the first matching rule
-RuleExecutionResult&lt;MyContextKey&gt; result = orchestrator.executeFirstMatch(context);
+RuleExecutionResult&lt;MyContextKey&gt; result = orchestrator.executeFirstMatchingRule(context);
 </code></pre>
 <p>In this example:
 1. The orchestrator retrieves all rules from the rule set
 2. Rules are filtered by their effective dates (only currently active rules are considered)
 3. Remaining rules are sorted by priority (lowest to highest number)
 4. Rules are evaluated in priority order
-5. With <code>executeFirstMatch()</code>, once a rule matches (its condition evaluates to true), its actions are executed and no further rules are evaluated
-6. With <code>executeAllMatches()</code>, all matching rules are executed in priority order</p>
+5. With <code>executeFirstMatchingRule()</code>, once a rule matches (its condition evaluates to true), its actions are executed and no further rules are evaluated
+6. With <code>executeAllMatchingRules()</code>, all matching rules are executed in priority order</p>
 <h2>Code Example: Priority Order Handling</h2>
 <p>The following code demonstrates how rule priorities are handled in the <code>RuleSet</code> class:</p>
 <pre><code class="language-java">/**
@@ -1977,7 +2066,7 @@ void testRuleWithFutureEffectiveDate() {
     context.add(MyContextKey.TEST_VALUE, &quot;test&quot;);
 
     // Execute rules - should not match because the rule is not effective yet
-    RuleExecutionResult&lt;MyContextKey&gt; result = orchestrator.executeFirstMatch(context);
+    RuleExecutionResult&lt;MyContextKey&gt; result = orchestrator.executeFirstMatchingRule(context);
     assertThat(result.hasMatch()).isFalse();
 
     // Now, we'll test with a FixedClock to simulate that it's 31 days in the future
@@ -2093,7 +2182,7 @@ public class HighValueOrderCheck implements BusinessCheck&lt;OrderContextKey&gt;
     @Override
     public Value execute(RuleContext&lt;OrderContextKey&gt; context, @Arg(&quot;threshold&quot;) Value threshold) {
         Double orderAmount = context.getRequired(OrderContextKey.ORDER_AMOUNT, Double.class);
-        Double thresholdValue = threshold.asDouble();
+        Double thresholdValue = threshold.asNumber().doubleValue();
         return Value.of(orderAmount &gt; thresholdValue);
     }
 }
@@ -2105,7 +2194,7 @@ public class ApplyDiscountAction implements BusinessAction&lt;OrderContextKey&gt
     @Override
     public Value execute(RuleContext&lt;OrderContextKey&gt; context, @Arg(&quot;percent&quot;) Value percent) {
         Double orderAmount = context.getRequired(OrderContextKey.ORDER_AMOUNT, Double.class);
-        Double discountPercent = percent.asDouble();
+        Double discountPercent = percent.asNumber().doubleValue();
 
         Double discountedAmount = orderAmount * (1 - (discountPercent / 100));
         context.add(OrderContextKey.ORDER_AMOUNT, discountedAmount);
@@ -2583,7 +2672,7 @@ public class HasRiskScoreCheck implements BusinessCheck&lt;MyContextKey&gt; {
         Integer riskScore = context.getRequired(MyContextKey.RISK_SCORE, Integer.class);
 
         // Get the threshold value from the argument
-        Integer thresholdValue = threshold.asInteger();
+        Integer thresholdValue = threshold.asNumber().intValue();
 
         // Return true if the risk score is greater than or equal to the threshold
         return Value.of(riskScore &gt;= thresholdValue);
@@ -2689,8 +2778,8 @@ public Value execute(RuleContext&lt;MyContextKey&gt; context,
 <h3>Accessing Argument Values</h3>
 <p>The <code>Value</code> class provides methods to convert the argument to various types:</p>
 <pre><code class="language-java">// Convert to primitive types
-Integer intValue = value.asInteger();
-Double doubleValue = value.asDouble();
+        Integer intValue = value.asNumber().intValue();
+Double doubleValue = value.asNumber().doubleValue();
 Boolean boolValue = value.asBoolean();
 String stringValue = value.asString();
 
@@ -2762,7 +2851,7 @@ public class HighValueCustomerCheck implements BusinessCheck&lt;CustomerContextK
                                   .orElse(false);
 
         // Apply business logic
-        Double threshold = spendThreshold.asDouble();
+        Double threshold = spendThreshold.asNumber().doubleValue();
         boolean isHighValue = totalSpend &gt; threshold || isPremium;
 
         // Return result as a Value
@@ -2803,7 +2892,7 @@ public class ApplyDiscountAction implements BusinessAction&lt;OrderContextKey&gt
         Double orderAmount = context.getRequired(OrderContextKey.ORDER_AMOUNT, Double.class);
 
         // Apply business logic
-        Double discountPercent = percent.asDouble();
+        Double discountPercent = percent.asNumber().doubleValue();
         String discountReason = reason.asString();
 
         Double discountedAmount = orderAmount * (1 - (discountPercent / 100));
@@ -2848,7 +2937,7 @@ public class ApplyDiscountAction implements BusinessAction&lt;OrderContextKey&gt
 <h3>Parameter Types</h3>
 <p>All parameters are passed as <code>Value</code> objects, which can be converted to specific types:</p>
 <pre><code class="language-java">String name = nameParam.asString();
-Double threshold = thresholdParam.asDouble();
+Double threshold = thresholdParam.asNumber().doubleValue();
 Boolean flag = thresholdParam.asBoolean();
 List&lt;String&gt; items = thresholdParam.asList(String.class);
 Map&lt;String, Object&gt; data = thresholdParam.asMap();
@@ -2859,7 +2948,7 @@ Map&lt;String, Object&gt; data = thresholdParam.asMap();
     // Default to 100 if not provided or not a valid number
     Double threshold = 100.0;
     try {
-        threshold = thresholdParam.asDouble();
+        threshold = thresholdParam.asNumber().doubleValue();
     } catch (ValueConversionException e) {
         // Log warning and use default
         logger.warn(&quot;Invalid threshold value, using default&quot;);
@@ -2876,7 +2965,7 @@ Map&lt;String, Object&gt; data = thresholdParam.asMap();
         throw new IllegalArgumentException(&quot;Age must be a number&quot;);
     }
 
-    Double age = ageParam.asDouble();
+    Double age = ageParam.asNumber().doubleValue();
     if (age &lt; 0) {
         throw new IllegalArgumentException(&quot;Age cannot be negative&quot;);
     }
@@ -3289,7 +3378,7 @@ public void testPremiumMemberDiscount() {
     context.add(OrderContextKey.ORDER_AMOUNT, 100.0);
 
     // Execute rule set
-    RuleExecutionResult&lt;OrderContextKey&gt; result = discountOrchestrator.executeAllMatches(context);
+    RuleExecutionResult&lt;OrderContextKey&gt; result = discountOrchestrator.executeAllMatchingRules(context);
 
     // Verify results
     assertTrue(result.hasMatches());
@@ -3368,7 +3457,7 @@ public class HighValueOrderCheck implements BusinessCheck&lt;OrderContextKey&gt;
         Double orderAmount = context.getRequired(OrderContextKey.ORDER_AMOUNT, Double.class);
 
         // Get the threshold value from the argument
-        Double thresholdValue = threshold.asDouble();
+        Double thresholdValue = threshold.asNumber().doubleValue();
 
         // Return true if the order amount exceeds the threshold
         return Value.of(orderAmount &gt;= thresholdValue);
@@ -3389,7 +3478,7 @@ public class ApplyDiscountAction implements BusinessAction&lt;OrderContextKey&gt
         Double orderAmount = context.getRequired(OrderContextKey.ORDER_AMOUNT, Double.class);
 
         // Get the discount percentage from the argument
-        Double discountPercentage = percentage.asDouble();
+        Double discountPercentage = percentage.asNumber().doubleValue();
 
         // Calculate the discounted amount
         Double discountedAmount = orderAmount * (1 - (discountPercentage / 100));
@@ -3456,7 +3545,7 @@ public class CreditScoreCheck implements BusinessCheck&lt;CustomerContextKey&gt;
         String customerId = context.getRequired(CustomerContextKey.CUSTOMER_ID, String.class);
 
         // Get the minimum score from the argument
-        int minimumScore = minScore.asInteger();
+        int minimumScore = minScore.asNumber().intValue();
 
         // Call the credit score service
         int creditScore = creditScoreService.getCreditScore(customerId);
@@ -3544,7 +3633,7 @@ public class LimitedDiscountAction implements BusinessAction&lt;OrderContextKey&
         Double orderAmount = context.getRequired(OrderContextKey.ORDER_AMOUNT, Double.class);
 
         // Apply the discount
-        Double discountPercentage = percentage.asDouble();
+        Double discountPercentage = percentage.asNumber().doubleValue();
         Double discountedAmount = orderAmount * (1 - (discountPercentage / 100));
 
         // Update the context
@@ -3628,8 +3717,8 @@ public class RangeCheck implements BusinessCheck&lt;OrderContextKey&gt; {
                          @Arg(&quot;max&quot;) Value max) {
         // Get the values from the arguments
         String targetKey = target.asString();
-        Double minValue = min.asDouble();
-        Double maxValue = max.asDouble();
+        Double minValue = min.asNumber().doubleValue();
+        Double maxValue = max.asNumber().doubleValue();
 
         // Get the target value from the context
         Double targetValue = context.getRequired(OrderContextKey.valueOf(targetKey), Double.class);
@@ -3889,7 +3978,7 @@ public Value execute(RuleContext&lt;OrderContextKey&gt; context, @Arg(&quot;disc
         throw new IllegalArgumentException(&quot;Discount must be a number&quot;);
     }
 
-    Double discount = discountParam.asDouble();
+    Double discount = discountParam.asNumber().doubleValue();
 
     // Validate discount is within acceptable range
     if (discount &lt; 0 || discount &gt; 100) {
@@ -4104,7 +4193,7 @@ public Value execute(RuleContext&lt;OrderContextKey&gt; context, @Arg(&quot;amou
         .orElse(ValidationLevel.NORMAL);
 
     // Validate amount based on level
-    Double amount = amountParam.asDouble();
+    Double amount = amountParam.asNumber().doubleValue();
     if (amount &lt; 0) {
         switch (level) {
             case STRICT:
@@ -4279,7 +4368,7 @@ if (!isAuthorized(userId, requestedAction)) {
                 new IllegalArgumentException(&quot;Threshold must be a number&quot;));
         }
 
-        Double thresholdValue = threshold.asDouble();
+        Double thresholdValue = threshold.asNumber().doubleValue();
         if (thresholdValue &lt; 0) {
             return result.invalid(
                 new IllegalArgumentException(&quot;Threshold cannot be negative&quot;));
@@ -4396,7 +4485,7 @@ context.add(MyContextKey.TRANSACTION_AMOUNT, 5000.0);
 context.add(MyContextKey.RISK_SCORE, 95);
 
 // Execute the first matching rule
-RuleExecutionResult&lt;MyContextKey&gt; result = orchestrator.executeFirstMatch(context);
+RuleExecutionResult&lt;MyContextKey&gt; result = orchestrator.executeFirstMatchingRule(context);
 if (result.hasMatch()) {
     BusinessRule&lt;MyContextKey&gt; matchedRule = result.getMatchedRule();
     System.out.println(&quot;Rule applied: &quot; + matchedRule.getName());
@@ -4405,7 +4494,7 @@ if (result.hasMatch()) {
 <h3>Execute All Matches</h3>
 <p>Executes all matching rules in priority order:</p>
 <pre><code class="language-java">// Execute all matching rules
-RuleExecutionResult&lt;MyContextKey&gt; result = orchestrator.executeAllMatches(context);
+RuleExecutionResult&lt;MyContextKey&gt; result = orchestrator.executeAllMatchingRules(context);
 if (result.hasMatches()) {
     List&lt;BusinessRule&lt;MyContextKey&gt;&gt; matchedRules = result.getMatchedRules();
     System.out.println(&quot;Number of rules applied: &quot; + matchedRules.size());
@@ -4430,15 +4519,15 @@ if (firstMatchingRule.isPresent()) {
 </code></pre>
 <h2>Working with Rule Execution Results</h2>
 <p>The <code>RuleExecutionResult</code> class provides detailed information about the execution of rules:</p>
-<pre><code class="language-java">RuleExecutionResult&lt;MyContextKey&gt; result = orchestrator.executeFirstMatch(context);
+<pre><code class="language-java">RuleExecutionResult&lt;MyContextKey&gt; result = orchestrator.executeFirstMatchingRule(context);
 
 // Check if any rule matched
 boolean hasMatch = result.hasMatch();
 
-// Get the matched rule (for executeFirstMatch)
+// Get the matched rule (for executeFirstMatchingRule)
 BusinessRule&lt;MyContextKey&gt; matchedRule = result.getMatchedRule();
 
-// Get all matched rules (for executeAllMatches)
+// Get all matched rules (for executeAllMatchingRules)
 List&lt;BusinessRule&lt;MyContextKey&gt;&gt; matchedRules = result.getMatchedRules();
 
 // Get the execution context (which may have been modified by rule actions)
@@ -4491,7 +4580,7 @@ private RuleOrchestrator&lt;MyContextKey&gt; highValueApprovalOrchestrator;
 <p><strong>Consider Context Modifications</strong>: Remember that rule actions can modify the context, so the context after rule execution may be different from the input context.</p>
 </li>
 <li>
-<p><strong>Choose the Right Execution Strategy</strong>: Use <code>executeFirstMatch</code> when you want only one rule to apply, and <code>executeAllMatches</code> when multiple rules should apply.</p>
+<p><strong>Choose the Right Execution Strategy</strong>: Use <code>executeFirstMatchingRule</code> when you want only one rule to apply, and <code>executeAllMatchingRules</code> when multiple rules should apply.</p>
 </li>
 <li>
 <p><strong>Separate Orchestrators by Domain</strong>: Create separate orchestrators for different domains or aspects of your application to keep rule execution focused.</p>
@@ -4532,7 +4621,7 @@ private RuleOrchestrator&lt;MyContextKey&gt; highValueApprovalOrchestrator;
 
         // Execute rules
         RuleExecutionResult&lt;OrderContextKey&gt; result = 
-            discountRuleOrchestrator.executeAllMatches(context);
+            discountRuleOrchestrator.executeAllMatchingRules(context);
 
         // Process results
         if (result.hasMatches()) {
@@ -4610,7 +4699,7 @@ private RuleOrchestrator&lt;OrderContextKey&gt; fraudDetectionOrchestrator;
 
         // First check for fraud
         RuleExecutionResult&lt;OrderContextKey&gt; fraudResult = 
-            fraudDetectionOrchestrator.executeFirstMatchingRule(context);
+            fraudDetectionOrchestrator.executeFirstMatchingRuleingRule(context);
 
         // If fraud detected, reject the order
         if (fraudResult.hasMatches()) {
@@ -4621,11 +4710,11 @@ private RuleOrchestrator&lt;OrderContextKey&gt; fraudDetectionOrchestrator;
 
         // Apply discounts
         RuleExecutionResult&lt;OrderContextKey&gt; discountResult = 
-            discountOrchestrator.executeAllMatches(context);
+            discountOrchestrator.executeAllMatchingRules(context);
 
         // Apply shipping rules
         RuleExecutionResult&lt;OrderContextKey&gt; shippingResult = 
-            shippingRulesOrchestrator.executeAllMatches(context);
+            shippingRulesOrchestrator.executeAllMatchingRules(context);
 
         // Update order with all rule results
         updateOrderFromRuleResults(order, context);
@@ -4655,7 +4744,7 @@ private RuleOrchestrator&lt;OrderContextKey&gt; fraudDetectionOrchestrator;
             throw new IllegalArgumentException(&quot;No rule set found with name: &quot; + ruleSetName);
         }
 
-        return orchestrator.executeAllMatches(context);
+        return orchestrator.executeAllMatchingRules(context);
     }
 }
 </code></pre>
@@ -4693,7 +4782,7 @@ protected void configure() {
         RuleOrchestrator&lt;OrderContextKey&gt; orchestrator = discountOrchestratorProvider.get();
 
         // Execute rules
-        RuleExecutionResult&lt;OrderContextKey&gt; result = orchestrator.executeAllMatches(context);
+        RuleExecutionResult&lt;OrderContextKey&gt; result = orchestrator.executeAllMatchingRules(context);
 
         // Process results...
         return order;
@@ -4817,8 +4906,8 @@ public class OrderService {
 <p>Each rule set is associated with a dedicated rule orchestrator, which is automatically created and registered in your dependency injection container.</p>
 <h2>Key Methods</h2>
 <p>Rule orchestrators provide several execution methods to meet different needs:</p>
-<h3>executeAllMatches</h3>
-<pre><code class="language-java">RuleExecutionResult&lt;T&gt; executeAllMatches(RuleContext&lt;T&gt; context);
+<h3>executeAllMatchingRules</h3>
+<pre><code class="language-java">RuleExecutionResult&lt;T&gt; executeAllMatchingRules(RuleContext&lt;T&gt; context);
 </code></pre>
 <p>This method:
 - Evaluates all rules in the rule set
@@ -4835,7 +4924,7 @@ context.add(OrderContextKey.ORDER_AMOUNT, 150.0);
 context.add(OrderContextKey.CUSTOMER_TYPE, &quot;PREMIUM&quot;);
 
 // Execute all matching rules
-RuleExecutionResult&lt;OrderContextKey&gt; result = discountOrchestrator.executeAllMatches(context);
+RuleExecutionResult&lt;OrderContextKey&gt; result = discountOrchestrator.executeAllMatchingRules(context);
 
 // Get the discounted amount after all rules applied
 if (result.hasMatches()) {
@@ -4843,8 +4932,8 @@ if (result.hasMatches()) {
     System.out.println(&quot;Final amount after all discounts: &quot; + finalAmount);
 }
 </code></pre>
-<h3>executeFirstMatchingRule</h3>
-<pre><code class="language-java">RuleExecutionResult&lt;T&gt; executeFirstMatchingRule(RuleContext&lt;T&gt; context);
+<h3>executeFirstMatchingRuleingRule</h3>
+<pre><code class="language-java">RuleExecutionResult&lt;T&gt; executeFirstMatchingRuleingRule(RuleContext&lt;T&gt; context);
 </code></pre>
 <p>This method:
 - Evaluates rules in priority order
@@ -4861,7 +4950,7 @@ context.add(UserContextKey.IP_ADDRESS, &quot;203.0.113.42&quot;);
 context.add(UserContextKey.LOGIN_ATTEMPTS, 5);
 
 // Execute first matching rule
-RuleExecutionResult&lt;UserContextKey&gt; result = fraudDetectionOrchestrator.executeFirstMatchingRule(context);
+RuleExecutionResult&lt;UserContextKey&gt; result = fraudDetectionOrchestrator.executeFirstMatchingRuleingRule(context);
 
 // Handle the result
 if (result.hasMatches()) {
@@ -4972,7 +5061,7 @@ RuleFilter&lt;OrderContextKey&gt; highPriorityFilter = rule -&gt; rule.getPriori
 // Apply the filter when executing
 RuleExecutionResult&lt;OrderContextKey&gt; result = orderRulesOrchestrator
     .withFilter(highPriorityFilter)
-    .executeAllMatches(context);
+    .executeAllMatchingRules(context);
 </code></pre>
 <p>Common filter scenarios:</p>
 <pre><code class="language-java">// Filter by tag
@@ -5009,7 +5098,7 @@ ContextPreprocessor&lt;OrderContextKey&gt; currencyConverter = context -&gt; {
 // Apply the preprocessor when executing
 RuleExecutionResult&lt;OrderContextKey&gt; result = orderRulesOrchestrator
     .withContextPreprocessor(currencyConverter)
-    .executeAllMatches(context);
+    .executeAllMatchingRules(context);
 </code></pre>
 <h3>Custom Execution Listeners</h3>
 <p>You can add listeners to track rule execution:</p>
@@ -5039,7 +5128,7 @@ RuleExecutionListener&lt;OrderContextKey&gt; loggingListener = new RuleExecution
 // Apply the listener when executing
 RuleExecutionResult&lt;OrderContextKey&gt; result = orderRulesOrchestrator
     .withExecutionListener(loggingListener)
-    .executeAllMatches(context);
+    .executeAllMatchingRules(context);
 </code></pre>
 <h2>Performance Considerations</h2>
 <h3>Context Reuse</h3>
@@ -5051,14 +5140,14 @@ context.add(OrderContextKey.ORDER_ID, orderId);
 
 // Execute multiple rule sets with the same context
 RuleExecutionResult&lt;OrderContextKey&gt; fraudResult = 
-    fraudDetectionOrchestrator.executeFirstMatchingRule(context);
+    fraudDetectionOrchestrator.executeFirstMatchingRuleingRule(context);
 
 if (!fraudResult.hasMatches()) {
     RuleExecutionResult&lt;OrderContextKey&gt; discountResult = 
-        discountOrchestrator.executeAllMatches(context);
+        discountOrchestrator.executeAllMatchingRules(context);
 
     RuleExecutionResult&lt;OrderContextKey&gt; shippingResult = 
-        shippingOrchestrator.executeAllMatches(context);
+        shippingOrchestrator.executeAllMatchingRules(context);
 }
 </code></pre>
 <h3>Parallel Execution</h3>
@@ -5068,13 +5157,13 @@ ExecutorService executor = Executors.newFixedThreadPool(3);
 
 // Execute rule sets in parallel
 Future&lt;RuleExecutionResult&lt;OrderContextKey&gt;&gt; discountFuture = 
-    executor.submit(() -&gt; discountOrchestrator.executeAllMatches(context.copy()));
+    executor.submit(() -&gt; discountOrchestrator.executeAllMatchingRules(context.copy()));
 
 Future&lt;RuleExecutionResult&lt;OrderContextKey&gt;&gt; taxFuture = 
-    executor.submit(() -&gt; taxOrchestrator.executeAllMatches(context.copy()));
+    executor.submit(() -&gt; taxOrchestrator.executeAllMatchingRules(context.copy()));
 
 Future&lt;RuleExecutionResult&lt;OrderContextKey&gt;&gt; shippingFuture = 
-    executor.submit(() -&gt; shippingOrchestrator.executeAllMatches(context.copy()));
+    executor.submit(() -&gt; shippingOrchestrator.executeAllMatchingRules(context.copy()));
 
 // Get results
 RuleExecutionResult&lt;OrderContextKey&gt; discountResult = discountFuture.get();
@@ -5103,7 +5192,7 @@ executor.shutdown();
 </ol>
 <p><code>java
    try {
-       RuleExecutionResult&lt;T&gt; result = orchestrator.executeAllMatches(context);
+       RuleExecutionResult&lt;T&gt; result = orchestrator.executeAllMatchingRules(context);
        // Process result
    } catch (RuleExecutionException e) {
        logger.error("Error executing rules: {}", e.getMessage(), e);
@@ -5147,7 +5236,7 @@ executor.shutdown();
        context.add(OrderContextKey.CUSTOMER_TYPE, "PREMIUM");
        context.add(OrderContextKey.ORDER_AMOUNT, 200.0);</p>
 <pre><code>   // Execute rules
-   RuleExecutionResult&lt;OrderContextKey&gt; result = discountOrchestrator.executeAllMatches(context);
+   RuleExecutionResult&lt;OrderContextKey&gt; result = discountOrchestrator.executeAllMatchingRules(context);
 
    // Verify results
    assertTrue(result.hasMatches());
@@ -5157,6 +5246,9 @@ executor.shutdown();
 <p>}
    ```</p></section>
 </section>
+</section>
+<section id="Integration & Frameworks" class="category-section">
+<h2>Integration & Frameworks</h2>
 </section>
 <section id="Testing & Best Practices" class="category-section">
 <h2>Testing & Best Practices</h2>
@@ -5308,7 +5400,7 @@ void testRuleSetPriorityOrder() {
     context.add(TestCtxKey.MATCHES_LOW_PRIORITY, true);
 
     // Execute first match
-    RuleExecutionResult&lt;TestCtxKey&gt; result = orchestrator.executeFirstMatch(context);
+    RuleExecutionResult&lt;TestCtxKey&gt; result = orchestrator.executeFirstMatchingRule(context);
 
     // Verify the high priority rule matched
     assertThat(result.hasMatch()).isTrue();
@@ -5393,7 +5485,7 @@ void testIntegrationWithGuice() {
     context.add(TestCtxKey.TEST_CONDITION, true);
 
     // Execute rules
-    RuleExecutionResult&lt;TestCtxKey&gt; result = orchestrator.executeFirstMatch(context);
+    RuleExecutionResult&lt;TestCtxKey&gt; result = orchestrator.executeFirstMatchingRule(context);
 
     // Verify the rule matched and action was performed
     assertThat(result.hasMatch()).isTrue();
@@ -5448,7 +5540,7 @@ void testYamlRuleSet() throws IOException {
 
         // Execute the rule
         RuleExecutionResult&lt;TestCtxKey&gt; result = 
-            helper.getOrchestrator().executeFirstMatch(context);
+            helper.getOrchestrator().executeFirstMatchingRule(context);
 
         // Verify the rule matched
         assertThat(result.hasMatch()).isTrue();
@@ -5508,7 +5600,7 @@ void testEffectiveDateHandling() {
     RuleContext&lt;TestCtxKey&gt; context = new RuleContext&lt;&gt;(TestCtxKey.class);
 
     // Execute rules - should not match because the rule is not effective yet
-    RuleExecutionResult&lt;TestCtxKey&gt; result = orchestrator.executeFirstMatch(context);
+    RuleExecutionResult&lt;TestCtxKey&gt; result = orchestrator.executeFirstMatchingRule(context);
     assertThat(result.hasMatch()).isFalse();
 
     // Now, we need to mock time to be after the effective date
@@ -5525,7 +5617,7 @@ void testEffectiveDateHandling() {
     // ruleSet.setClock(mockClock);
 
     // Execute rules again - now should match
-    // RuleExecutionResult&lt;TestCtxKey&gt; resultAfterTimeChange = orchestrator.executeFirstMatch(context);
+    // RuleExecutionResult&lt;TestCtxKey&gt; resultAfterTimeChange = orchestrator.executeFirstMatchingRule(context);
     // assertThat(resultAfterTimeChange.hasMatch()).isTrue();
 }
 </code></pre>
@@ -5546,7 +5638,7 @@ void testRuleExecutionPerformance() {
     // Measure execution time
     long startTime = System.nanoTime();
 
-    orchestrator.executeFirstMatch(context);
+    orchestrator.executeFirstMatchingRule(context);
 
     long endTime = System.nanoTime();
     long durationMs = (endTime - startTime) / 1_000_000; // Convert to milliseconds
@@ -5571,7 +5663,7 @@ void testComplexRuleExecutionResults() {
     context.add(TestCtxKey.ORDER_AMOUNT, 5000.0);
 
     // Execute all matching rules
-    RuleExecutionResult&lt;TestCtxKey&gt; result = orchestrator.executeAllMatches(context);
+    RuleExecutionResult&lt;TestCtxKey&gt; result = orchestrator.executeAllMatchingRules(context);
 
     // Verify multiple aspects of the result
     assertThat(result.hasMatches()).isTrue();
@@ -5642,17 +5734,316 @@ void testComplexRuleExecutionResults() {
 <li><a href="#rule-priority">Rule Priority</a> - Testing rule priority ordering</li>
 </ul></section>
 <section id="best-practices" class="content-section">
-<h1>Rule Set Validations</h1>
-<blockquote>
-<p><strong>Note:</strong> This documentation section is under development. Check back soon for detailed information.</p>
-</blockquote>
-<h2>Coming Soon</h2>
-<p>This section will include:</p>
+<h1>Best Practices for Axiom Rules</h1>
+<p>This guide covers best practices for developing, testing, and maintaining Axiom business rules in production environments.</p>
+<h2>Development Best Practices</h2>
+<h3>1. Rule Design Principles</h3>
+<h4>Keep Rules Simple and Focused</h4>
 <ul>
-<li>Feature overview and concepts</li>
-<li>Implementation details</li>
-<li>Code examples</li>
-<li>Best practices</li>
+<li>Each rule should have a single, clear purpose</li>
+<li>Avoid complex nested conditions that are hard to understand</li>
+<li>Use descriptive rule names that explain what the rule does</li>
+</ul>
+<pre><code class="language-yaml"># Good: Clear, focused rule
+- name: &quot;Apply Premium Customer Discount&quot;
+  description: &quot;Apply 10% discount for premium customers with orders over $100&quot;
+  expression: isPremiumCustomer() and orderAmount() &gt; 100 then applyDiscount(10)
+
+# Avoid: Complex, multi-purpose rule
+- name: &quot;Complex Customer Processing&quot;
+  expression: (isPremiumCustomer() or (isRegularCustomer() and orderAmount() &gt; 200 and hasLoyaltyPoints())) and not hasActivePromotion() then (applyDiscount(5) and updateLoyaltyPoints() and sendNotification())
+</code></pre>
+<h4>Use Meaningful Names</h4>
+<ul>
+<li>Business checks and actions should have descriptive names</li>
+<li>Context keys should clearly indicate what data they contain</li>
+<li>Rule names should explain business intent, not technical implementation</li>
+</ul>
+<h3>2. Code Organization</h3>
+<h4>Separate Business Logic by Domain</h4>
+<pre><code class="language-java">// Good: Organize by business domain
+com.example.rules.customer.checks.IsHighValueCustomerCheck
+com.example.rules.customer.actions.ApplyCustomerDiscountAction
+com.example.rules.order.checks.HasMinimumOrderAmountCheck
+com.example.rules.order.actions.ApplyShippingDiscountAction
+</code></pre>
+<h4>Use Consistent Parameter Naming</h4>
+<pre><code class="language-java">// Good: Consistent parameter names
+@Arg(&quot;threshold&quot;) Value threshold
+@Arg(&quot;percentage&quot;) Value percentage
+@Arg(&quot;minAmount&quot;) Value minAmount
+
+// Avoid: Inconsistent naming
+@Arg(&quot;thresh&quot;) Value threshold
+@Arg(&quot;pct&quot;) Value percentage
+@Arg(&quot;minimum_amount&quot;) Value minAmount
+</code></pre>
+<h3>3. Error Handling</h3>
+<h4>Validate Input Parameters</h4>
+<pre><code class="language-java">public Value execute(RuleContext&lt;CustomerContextKey&gt; ctx, @Arg(&quot;threshold&quot;) Value threshold) {
+    // Validate parameters
+    if (threshold == null) {
+        throw new IllegalArgumentException(&quot;Threshold parameter cannot be null&quot;);
+    }
+
+    // Validate context data
+    if (!ctx.has(CustomerContextKey.SPENDING_AMOUNT)) {
+        throw new IllegalStateException(&quot;Required context key SPENDING_AMOUNT is missing&quot;);
+    }
+
+    // Business logic here...
+}
+</code></pre>
+<h4>Handle Edge Cases Gracefully</h4>
+<pre><code class="language-java">public Value execute(RuleContext&lt;CustomerContextKey&gt; ctx) {
+    // Handle potential null or missing data
+    Optional&lt;LocalDateTime&gt; regDate = ctx.get(CustomerContextKey.REGISTRATION_DATE, LocalDateTime.class);
+    if (regDate.isEmpty()) {
+        // Return false for customers without registration date rather than throwing
+        return Value.of(false);
+    }
+
+    // Continue with business logic...
+}
+</code></pre>
+<h2>Testing Best Practices</h2>
+<h3>1. Comprehensive Test Coverage</h3>
+<h4>Test All Rule Scenarios</h4>
+<pre><code class="language-java">@Test
+@DisplayName(&quot;Should apply discount for high value customers&quot;)
+void testHighValueCustomerDiscount() {
+    // Given: High value customer
+    RuleContext&lt;CustomerContextKey&gt; context = createContext(
+        new BigDecimal(&quot;2500.00&quot;), // High spending
+        5,                         // High loyalty
+        LocalDateTime.now().minusDays(35)
+    );
+
+    // When: Rules are executed
+    RuleExecutionResult&lt;CustomerContextKey&gt; result = ruleOrchestrator.executeAllMatchingRules(context);
+
+    // Then: Verify expected behavior
+    assertThat(result.hasMatches()).isTrue();
+    assertThat(result.hasFailed()).isFalse();
+
+    BigDecimal discount = context.getRequired(CustomerContextKey.DISCOUNT_PERCENTAGE, BigDecimal.class);
+    assertThat(discount).isGreaterThan(BigDecimal.ZERO);
+}
+</code></pre>
+<h4>Test Edge Cases</h4>
+<pre><code class="language-java">@Test
+@DisplayName(&quot;Should handle new customer scenario gracefully&quot;)
+void testNewCustomer() {
+    // Given: Brand new customer with minimal data
+    RuleContext&lt;CustomerContextKey&gt; context = createContext(
+        new BigDecimal(&quot;50.00&quot;),  // Low spending
+        1,                        // Low loyalty
+        LocalDateTime.now()       // Just registered
+    );
+
+    // When: Rules are executed
+    RuleExecutionResult&lt;CustomerContextKey&gt; result = ruleOrchestrator.executeAllMatchingRules(context);
+
+    // Then: Should handle gracefully (no rules may match)
+    if (result.hasFailed()) {
+        assertThat(result.getFailureReason()).hasValue(&quot;No rules matched the context&quot;);
+    } else {
+        assertThat(result.hasMatches()).isTrue();
+    }
+}
+</code></pre>
+<h3>2. Integration Testing</h3>
+<h4>Test End-to-End Scenarios</h4>
+<pre><code class="language-java">@DisplayName(&quot;Axiom Integration Tests&quot;)
+class AxiomIntegrationTest {
+
+    @Inject
+    @Named(&quot;customer_discount&quot;)
+    private RuleOrchestrator&lt;CustomerContextKey&gt; ruleOrchestrator;
+
+    @BeforeEach
+    void setUp() {
+        // Initialize Guice injector with production configuration
+        Injector injector = Guice.createInjector(new ApplicationMainModule());
+        injector.injectMembers(this);
+    }
+
+    @Test
+    @DisplayName(&quot;Should execute multiple rules in priority order&quot;)
+    void testRulePriorityExecution() {
+        // Test that rules execute in correct priority order
+        // and produce expected cumulative results
+    }
+}
+</code></pre>
+<h3>3. Performance Testing</h3>
+<h4>Benchmark Rule Execution</h4>
+<pre><code class="language-java">@BenchmarkMode(Mode.AverageTime)
+@OutputTimeUnit(TimeUnit.MICROSECONDS)
+public class RulePerformanceBenchmark {
+
+    @Benchmark
+    public RuleExecutionResult&lt;CustomerContextKey&gt; benchmarkHighValueCustomerRules() {
+        return ruleOrchestrator.executeAllMatchingRules(highValueCustomerContext);
+    }
+
+    @Benchmark
+    public RuleExecutionResult&lt;CustomerContextKey&gt; benchmarkSimpleCustomerRules() {
+        return ruleOrchestrator.executeAllMatchingRules(simpleCustomerContext);
+    }
+}
+</code></pre>
+<h2>Production Deployment Best Practices</h2>
+<h3>1. Rule Versioning and Deployment</h3>
+<h4>Use Effective Dates for Rule Changes</h4>
+<pre><code class="language-yaml">rules:
+  - name: &quot;Holiday Discount 2024&quot;
+    description: &quot;Special holiday discount for December 2024&quot;
+    expression: orderAmount() &gt; 100 then applyDiscount(15)
+    effectiveFrom: &quot;2024-12-01T00:00:00Z&quot;
+    effectiveTo: &quot;2024-12-31T23:59:59Z&quot;
+    priority: 10
+</code></pre>
+<h4>Gradual Rule Rollout</h4>
+<ul>
+<li>Deploy new rules with future effective dates</li>
+<li>Test in staging environment first</li>
+<li>Monitor rule execution results after deployment</li>
+<li>Have rollback plan for problematic rules</li>
+</ul>
+<h3>2. Monitoring and Observability</h3>
+<h4>Log Rule Execution Results</h4>
+<pre><code class="language-java">public class OrderService {
+    private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
+
+    public void processOrder(Order order) {
+        RuleExecutionResult&lt;OrderContextKey&gt; result = orchestrator.executeAllMatchingRules(context);
+
+        // Log execution summary
+        logger.info(&quot;Executed {} rules for order {}, {} matched, {} failed&quot;, 
+            result.getExecutedRules().size(), 
+            order.getId(), 
+            result.getMatchedRules().size(),
+            result.hasFailed() ? 1 : 0);
+
+        // Log individual rule results for debugging
+        result.getExecutedRules().forEach((rule, success) -&gt; 
+            logger.debug(&quot;Rule '{}' executed with result: {}&quot;, rule.getName(), success));
+    }
+}
+</code></pre>
+<h4>Monitor Performance Metrics</h4>
+<ul>
+<li>Track rule execution times</li>
+<li>Monitor rule match rates</li>
+<li>Alert on execution failures</li>
+<li>Track context data completeness</li>
+</ul>
+<h3>3. Configuration Management</h3>
+<h4>Externalize Rule Configuration</h4>
+<pre><code class="language-properties"># application.properties
+axiom.rules.customer-discount.file=customer_discount_rules.yaml
+axiom.rules.customer-discount.reload-interval=300s
+axiom.rules.performance.enable-caching=true
+axiom.rules.performance.cache-size=1000
+</code></pre>
+<h4>Environment-Specific Rules</h4>
+<pre><code class="language-yaml"># development.yaml
+rules:
+  - name: &quot;Debug Discount&quot;
+    description: &quot;Special discount for testing&quot;
+    expression: alwaysTrue() then applyDiscount(50)
+    priority: 1
+
+# production.yaml  
+rules:
+  # Only production-appropriate rules
+</code></pre>
+<h2>Security Best Practices</h2>
+<h3>1. Input Validation</h3>
+<h4>Validate All Context Data</h4>
+<pre><code class="language-java">public Value execute(RuleContext&lt;CustomerContextKey&gt; ctx, @Arg(&quot;amount&quot;) Value amount) {
+    // Validate numeric ranges
+    BigDecimal amountValue = amount.asNumber();
+    if (amountValue.compareTo(BigDecimal.ZERO) &lt; 0) {
+        throw new IllegalArgumentException(&quot;Amount cannot be negative&quot;);
+    }
+    if (amountValue.compareTo(new BigDecimal(&quot;1000000&quot;)) &gt; 0) {
+        throw new IllegalArgumentException(&quot;Amount exceeds maximum allowed value&quot;);
+    }
+
+    // Continue with business logic...
+}
+</code></pre>
+<h3>2. Access Control</h3>
+<h4>Limit Rule Modification Access</h4>
+<ul>
+<li>Control who can deploy rule changes</li>
+<li>Require code review for rule modifications</li>
+<li>Use audit logging for rule deployments</li>
+<li>Implement approval workflows for production changes</li>
+</ul>
+<h2>Performance Optimization</h2>
+<h3>1. Rule Design for Performance</h3>
+<h4>Order Rules by Frequency and Cost</h4>
+<pre><code class="language-yaml">rules:
+  # High frequency, low cost rules first
+  - name: &quot;Simple Amount Check&quot;
+    expression: orderAmount() &gt; 10 then flagForReview()
+    priority: 1
+
+  # Lower frequency, higher cost rules later  
+  - name: &quot;Complex Customer Analysis&quot;
+    expression: isHighRiskCustomer() and hasComplexHistory() then escalateToManager()
+    priority: 100
+</code></pre>
+<h4>Minimize Expensive Operations</h4>
+<pre><code class="language-java">// Good: Cache expensive operations
+private final Map&lt;String, Boolean&gt; customerCache = new ConcurrentHashMap&lt;&gt;();
+
+public Value execute(RuleContext&lt;CustomerContextKey&gt; ctx) {
+    String customerId = ctx.getRequired(CustomerContextKey.CUSTOMER_ID, String.class);
+
+    // Use cache to avoid repeated expensive calls
+    Boolean isHighRisk = customerCache.computeIfAbsent(customerId, 
+        id -&gt; expensiveRiskCalculation(id));
+
+    return Value.of(isHighRisk);
+}
+</code></pre>
+<h3>2. Context Optimization</h3>
+<h4>Provide Only Necessary Data</h4>
+<pre><code class="language-java">// Good: Minimal context with only required data
+RuleContext&lt;OrderContextKey&gt; context = new RuleContext&lt;&gt;(OrderContextKey.class);
+context.add(OrderContextKey.ORDER_AMOUNT, order.getAmount());
+context.add(OrderContextKey.CUSTOMER_TYPE, customer.getType());
+
+// Avoid: Loading unnecessary data
+// context.add(OrderContextKey.FULL_CUSTOMER_HISTORY, loadEntireHistory(customer));
+</code></pre>
+<h2>Maintenance Best Practices</h2>
+<h3>1. Documentation</h3>
+<h4>Document Business Rules</h4>
+<ul>
+<li>Maintain clear documentation for each rule's business purpose</li>
+<li>Document rule interactions and dependencies</li>
+<li>Keep examples up-to-date with current implementation</li>
+<li>Document known limitations and edge cases</li>
+</ul>
+<h3>2. Rule Lifecycle Management</h3>
+<h4>Regular Rule Review</h4>
+<ul>
+<li>Periodically review rule effectiveness</li>
+<li>Remove obsolete or unused rules</li>
+<li>Update rules when business requirements change</li>
+<li>Monitor rule performance and optimize as needed</li>
+</ul>
+<h4>Version Control</h4>
+<ul>
+<li>Store rule files in version control</li>
+<li>Tag rule releases</li>
+<li>Maintain release notes for rule changes</li>
+<li>Use branching strategy for rule development</li>
 </ul></section>
 </section>
 

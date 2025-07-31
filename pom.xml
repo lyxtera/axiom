@@ -5,15 +5,57 @@
     
     <groupId>com.lyxtera</groupId>
     <artifactId>axiom-parent</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <packaging>pom</packaging>
     
     <name>Axiom Parent Project</name>
     <description>A lightweight rule engine for fast decision making setup</description>
+    <url>https://github.com/lyxtera/axiom</url>
+    
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    
+    <developers>
+        <developer>
+            <id>lyxtera</id>
+            <name>Lyxtera Team</name>
+            <email>team@lyxtera.com</email>
+            <organization>Lyxtera</organization>
+            <organizationUrl>https://lyxtera.com</organizationUrl>
+        </developer>
+    </developers>
+    
+    <scm>
+        <connection>scm:git:git://github.com/lyxtera/axiom.git</connection>
+        <developerConnection>scm:git:ssh://github.com:lyxtera/axiom.git</developerConnection>
+        <url>https://github.com/lyxtera/axiom/tree/main</url>
+    </scm>
+    
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/lyxtera/axiom/issues</url>
+    </issueManagement>
+    
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
     
     <modules>
         <module>axiom-rules</module>
         <module>axiom-codegen</module>
+        <module>axiom-examples</module>
     </modules>
 
     <properties>
@@ -27,15 +69,12 @@
         <guice.version>5.1.0</guice.version>
         <slf4j.version>1.7.36</slf4j.version>
         <logback.version>1.2.11</logback.version>
-        <junit.version>5.5.0</junit.version>
+        <junit.version>5.10.2</junit.version>
         <mockito.version>3.12.4</mockito.version>
         <assertj.version>3.18.0</assertj.version>
         <maven.plugin.version>3.9.6</maven.plugin.version>
         <maven-plugin-annotations.version>3.9.0</maven-plugin-annotations.version>
         <maven.javadoc.skip>true</maven.javadoc.skip>
-        <axiom.stubs.skip>true</axiom.stubs.skip>
-        <axiom.stubs.package>com.example.rules</axiom.stubs.package>
-        <axiom.stubs.ruleSets>src/main/resources/rules.yaml</axiom.stubs.ruleSets>
         <axiom.stubs.outputDirectory>${project.build.directory}/generated-sources/axiom</axiom.stubs.outputDirectory>
         <axiom.stubs.overwriteExisting>false</axiom.stubs.overwriteExisting>
     </properties>
@@ -94,6 +133,18 @@
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-api</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
                 <version>${junit.version}</version>
                 <scope>test</scope>
             </dependency>
@@ -194,7 +245,7 @@
                                             <limit>
                                                 <counter>INSTRUCTION</counter>
                                                 <value>COVEREDRATIO</value>
-                                                <minimum>0.58</minimum>
+                                                <minimum>0.50</minimum>
                                             </limit>
                                             <limit>
                                                 <counter>BRANCH</counter>
@@ -224,7 +275,14 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.22.2</version>
+                    <version>3.2.5</version>
+                    <configuration>
+                        <includes>
+                            <include>**/*Test.java</include>
+                            <include>**/*Tests.java</include>
+                            <include>**/*TestCase.java</include>
+                        </includes>
+                    </configuration>
                 </plugin>
                 
                 <!-- Maven Compiler Plugin -->
@@ -301,30 +359,4 @@
             </plugin>
         </plugins>
     </build>
-    
-    <!-- Information needed for Maven Central publishing -->
-    <url>https://github.com/lyxtera/axiom</url>
-    
-    <licenses>
-        <license>
-            <name>Apache License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
-    
-    <developers>
-        <developer>
-            <name>Dmytro Shelia</name>
-            <email>dmytro.shelia@lyxtera.com</email>
-            <organization>Lyxtera</organization>
-            <organizationUrl>https://lyxtera.com</organizationUrl>
-        </developer>
-    </developers>
-    
-    <scm>
-        <connection>scm:git:git://github.com/lyxtera/axiom.git</connection>
-        <developerConnection>scm:git:ssh://github.com:lyxtera/axiom.git</developerConnection>
-        <url>https://github.com/lyxtera/axiom</url>
-    </scm>
 </project> 

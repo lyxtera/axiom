@@ -1,7 +1,9 @@
 package com.lyxtera.axiom.engine;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -9,14 +11,20 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.lyxtera.axiom.api.exception.AxiomEngineException;
+import com.lyxtera.axiom.api.exception.RuleException;
 import com.lyxtera.axiom.api.model.BusinessRule;
+import com.lyxtera.axiom.api.model.Condition;
+import com.lyxtera.axiom.api.model.RuleFunction;
+import com.lyxtera.axiom.api.model.RuleSetDescriptor.BusinessActionDescriptor;
+import com.lyxtera.axiom.api.model.RuleSetDescriptor.BusinessCheckDescriptor;
 
 /**
  * Tests for the RuleSet class.
  */
 public class RuleSetTest {
     
-    private enum TestKey {
+    public enum TestKey {
         TEST_KEY
     }
     
@@ -24,85 +32,164 @@ public class RuleSetTest {
     private BusinessRule<TestKey> rule1;
     private BusinessRule<TestKey> rule2;
     private BusinessRule<TestKey> rule3;
+    private BusinessRule<TestKey> expiredRule;
+    private BusinessRule<TestKey> futureRule;
+    private ZonedDateTime now;
+    private ZonedDateTime past;
+    private ZonedDateTime future;
     
     @BeforeEach
-    public void setUp() {
+    void setUp() {
+        // Create a rule set
         ruleSet = new RuleSet<>();
         
         // Create mock rules
-        rule1 = mock(BusinessRule.class);
-        rule2 = mock(BusinessRule.class);
-        rule3 = mock(BusinessRule.class);
+        rule1 = createMockRule("Rule1");
+        rule2 = createMockRule("Rule2");
+        rule3 = createMockRule("Rule3");
+        expiredRule = createMockRule("ExpiredRule");
+        futureRule = createMockRule("FutureRule");
+        
+        // Create dates for testing
+        now = ZonedDateTime.now();
+        past = now.minusDays(30);
+        future = now.plusDays(30);
     }
     
     @Test
-    public void testRulesInPriorityOrder() {
+    void testAddRuleWithPriority() {
         // Add rules with different priorities
-        ruleSet.addRule(rule1, 10, ZonedDateTime.now().minusDays(1));
-        ruleSet.addRule(rule2, 5, ZonedDateTime.now().minusDays(1));
-        ruleSet.addRule(rule3, 20, ZonedDateTime.now().minusDays(1));
+        ruleSet.addRule(rule1, 10, now);
+        ruleSet.addRule(rule2, 20, now);
+        ruleSet.addRule(rule3, 5, now);
         
         // Get rules in priority order
         List<BusinessRule<TestKey>> rules = ruleSet.getRulesInPriorityOrder();
         
-        // Verify rules are in correct order (lowest priority number first)
-        assertThat(rules)
-            .hasSize(3)
-            .containsExactly(rule2, rule1, rule3);
+        // Verify that rules are in priority order (lowest first)
+        assertThat(rules).hasSize(3);
+        assertThat(rules.get(0)).isEqualTo(rule3);
+        assertThat(rules.get(1)).isEqualTo(rule1);
+        assertThat(rules.get(2)).isEqualTo(rule2);
     }
     
     @Test
-    public void testEffectiveFromFiltering() {
-        // Add rules with different effective dates
-        ruleSet.addRule(rule1, 10, ZonedDateTime.now().minusDays(1)); // Active
-        ruleSet.addRule(rule2, 5, ZonedDateTime.now().plusDays(1));  // Not yet active
-        ruleSet.addRule(rule3, 20, ZonedDateTime.now().minusDays(2)); // Active
+    void testAddRuleWithInvalidPriority() {
+        // Attempt to add a rule with invalid priority
+        assertThatThrownBy(() -> ruleSet.addRule(rule1, 0, now))
+            .isInstanceOf(RuleException.class)
+            .hasMessageContaining(AxiomEngineException.MSG_INVALID_PRIORITY);
         
-        // Get rules in priority order
-        List<BusinessRule<TestKey>> rules = ruleSet.getRulesInPriorityOrder();
-        
-        // Verify only active rules are included
-        assertThat(rules)
-            .hasSize(2)
-            .contains(rule1, rule3);
+        assertThatThrownBy(() -> ruleSet.addRule(rule1, -1, now))
+            .isInstanceOf(RuleException.class)
+            .hasMessageContaining(AxiomEngineException.MSG_INVALID_PRIORITY);
     }
     
     @Test
-    public void testEffectiveToFiltering() {
-        // Add rules with different effective date ranges
-        ruleSet.addRule(rule1, 10, ZonedDateTime.now().minusDays(2), ZonedDateTime.now().plusDays(1)); // Active
-        ruleSet.addRule(rule2, 5, ZonedDateTime.now().minusDays(2), ZonedDateTime.now().minusDays(1)); // Expired
-        ruleSet.addRule(rule3, 20, ZonedDateTime.now().minusDays(2), null); // Active (no end date)
+    void testAddRuleWithEffectiveDates() {
+        // Add a rule effective now
+        ruleSet.addRule(rule1, 10, now);
         
-        // Get rules in priority order
+        // Add a rule that expired in the past
+        ruleSet.addRule(expiredRule, 20, past, past.plusDays(1));
+        
+        // Add a rule effective in the future
+        ruleSet.addRule(futureRule, 30, future);
+        
+        // Get effective rules
         List<BusinessRule<TestKey>> rules = ruleSet.getRulesInPriorityOrder();
         
-        // Verify only active rules are included
-        assertThat(rules)
-            .hasSize(2)
-            .contains(rule1, rule3);
+        // Verify that only the current rule is included
+        assertThat(rules).hasSize(1);
+        assertThat(rules.get(0)).isEqualTo(rule1);
     }
     
     @Test
-    public void testEffectiveDateRangeOverlap() {
-        // Create rules with overlapping effective date ranges
-        ZonedDateTime now = ZonedDateTime.now();
+    void testGetMetadata() {
+        // Create metadata
+        RuleSet.Metadata metadata = new RuleSet.Metadata();
+        metadata.setRuleSetName("TestRuleSet");
+        metadata.setRuleSetDescription("A test rule set");
         
-        // Rule 1: Active from yesterday to tomorrow
-        ruleSet.addRule(rule1, 10, now.minusDays(1), now.plusDays(1));
+        // Add business check descriptors
+        BusinessCheckDescriptor checkDescriptor = new BusinessCheckDescriptor();
+        checkDescriptor.setName("testCheck");
+        metadata.setBusinessCheckDescriptors(List.of(checkDescriptor));
         
-        // Rule 2: Active from 2 days ago to yesterday (just expired)
-        ruleSet.addRule(rule2, 5, now.minusDays(2), now.minusDays(1));
+        // Add business action descriptors
+        BusinessActionDescriptor actionDescriptor = new BusinessActionDescriptor();
+        actionDescriptor.setName("testAction");
+        metadata.setBusinessActionDescriptors(List.of(actionDescriptor));
         
-        // Rule 3: Active starting tomorrow
-        ruleSet.addRule(rule3, 20, now.plusDays(1), null);
+        // Set metadata
+        ruleSet.setMetadata(metadata);
         
-        // Get rules in priority order
-        List<BusinessRule<TestKey>> rules = ruleSet.getRulesInPriorityOrder();
+        // Verify that metadata is set correctly
+        assertThat(ruleSet.getMetadata()).isEqualTo(metadata);
+        assertThat(ruleSet.getMetadata().getRuleSetName()).isEqualTo("TestRuleSet");
+        assertThat(ruleSet.getMetadata().getRuleSetDescription()).isEqualTo("A test rule set");
+        assertThat(ruleSet.getMetadata().getBusinessCheckDescriptor("testCheck")).isEqualTo(checkDescriptor);
+        assertThat(ruleSet.getMetadata().getBusinessActionDescriptor("testAction")).isEqualTo(actionDescriptor);
+    }
+    
+    @Test
+    void testValidate() {
+        // Create a rule set with metadata
+        RuleSet.Metadata metadata = new RuleSet.Metadata();
+        metadata.setRuleSetName("TestRuleSet");
         
-        // Verify only currently active rules are included
-        assertThat(rules)
-            .hasSize(1)
-            .containsExactly(rule1);
+        // Add business action descriptors for the rule's actions
+        BusinessActionDescriptor actionDescriptor = new BusinessActionDescriptor();
+        actionDescriptor.setName("testAction");
+        metadata.setBusinessActionDescriptors(List.of(actionDescriptor));
+        
+        ruleSet.setMetadata(metadata);
+        
+        // Add at least one rule to make validation pass
+        ruleSet.addRule(rule1, 10, now);
+        
+        // Validate the rule set (should not throw an exception)
+        ruleSet.validate();
+        
+        // Test for a rule set with empty ruleset name
+        RuleSet<TestKey> emptyNameRuleSet = new RuleSet<>();
+        RuleSet.Metadata emptyNameMetadata = new RuleSet.Metadata();
+        emptyNameRuleSet.setMetadata(emptyNameMetadata);
+        
+        // Add a rule to avoid "empty rule set" error
+        emptyNameRuleSet.addRule(rule2, 10, now);
+        
+        // Attempt to validate the rule set with empty name
+        assertThatThrownBy(() -> emptyNameRuleSet.validate())
+            .isInstanceOf(RuleException.class)
+            .hasMessageContaining("Rule set name is required");
+        
+        // Test for completely empty ruleset (no rules)
+        RuleSet<TestKey> emptyRuleSet = new RuleSet<>();
+        
+        // Attempt to validate a completely empty ruleset
+        assertThatThrownBy(() -> emptyRuleSet.validate())
+            .isInstanceOf(RuleException.class)
+            .hasMessageContaining("Rule set is empty");
+    }
+    
+    // Helper method to create a mock rule
+    private BusinessRule<TestKey> createMockRule(String name) {
+        @SuppressWarnings("unchecked")
+        BusinessRule<TestKey> rule = mock(BusinessRule.class);
+        when(rule.getName()).thenReturn(name);
+        
+        // Add a condition to pass validation
+        @SuppressWarnings("unchecked")
+        Condition<TestKey> condition = mock(Condition.class);
+        when(rule.getCondition()).thenReturn(condition);
+        
+        // Add actions to pass the validation
+        @SuppressWarnings("unchecked")
+        RuleFunction<TestKey> action = mock(RuleFunction.class);
+        when(action.getName()).thenReturn("testAction");
+        when(rule.getActions()).thenReturn(List.of(action));
+        
+        return rule;
     }
 } 

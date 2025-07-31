@@ -28,7 +28,7 @@ public class HighValueCustomerCheck implements BusinessCheck<CustomerContextKey>
                                   .orElse(false);
         
         // Apply business logic
-        Double threshold = spendThreshold.asDouble();
+        Double threshold = spendThreshold.asNumber().doubleValue();
         boolean isHighValue = totalSpend > threshold || isPremium;
         
         // Return result as a Value
@@ -69,7 +69,7 @@ public class ApplyDiscountAction implements BusinessAction<OrderContextKey> {
         Double orderAmount = context.getRequired(OrderContextKey.ORDER_AMOUNT, Double.class);
         
         // Apply business logic
-        Double discountPercent = percent.asDouble();
+        Double discountPercent = percent.asNumber().doubleValue();
         String discountReason = reason.asString();
         
         Double discountedAmount = orderAmount * (1 - (discountPercent / 100));
@@ -120,7 +120,7 @@ All parameters are passed as `Value` objects, which can be converted to specific
 
 ```java
 String name = nameParam.asString();
-Double threshold = thresholdParam.asDouble();
+Double threshold = thresholdParam.asNumber().doubleValue();
 Boolean flag = thresholdParam.asBoolean();
 List<String> items = thresholdParam.asList(String.class);
 Map<String, Object> data = thresholdParam.asMap();
@@ -135,7 +135,7 @@ public Value execute(RuleContext<T> context, @Arg("threshold") Value thresholdPa
     // Default to 100 if not provided or not a valid number
     Double threshold = 100.0;
     try {
-        threshold = thresholdParam.asDouble();
+        threshold = thresholdParam.asNumber().doubleValue();
     } catch (ValueConversionException e) {
         // Log warning and use default
         logger.warn("Invalid threshold value, using default");
@@ -156,7 +156,7 @@ public Value execute(RuleContext<T> context, @Arg("age") Value ageParam) {
         throw new IllegalArgumentException("Age must be a number");
     }
     
-    Double age = ageParam.asDouble();
+    Double age = ageParam.asNumber().doubleValue();
     if (age < 0) {
         throw new IllegalArgumentException("Age cannot be negative");
     }

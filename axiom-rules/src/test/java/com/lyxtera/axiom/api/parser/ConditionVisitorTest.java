@@ -1,10 +1,7 @@
 package com.lyxtera.axiom.api.parser;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -145,7 +142,7 @@ public class ConditionVisitorTest {
         Condition<TestKey> condition = mockVisitor.visitExpression(ctx);
         
         // The condition should evaluate to true
-        assertTrue(condition.evaluate(mock(RuleContext.class)));
+        assertThat(condition.evaluate(mock(RuleContext.class))).isTrue();
     }
     
     @Test
@@ -179,7 +176,7 @@ public class ConditionVisitorTest {
         Condition<TestKey> condition = mockVisitor.visitAndExpression(ctx);
         
         // The condition should evaluate to false (true AND false = false)
-        assertFalse(condition.evaluate(mock(RuleContext.class)));
+        assertThat(condition.evaluate(mock(RuleContext.class))).isFalse();
     }
     
     @Test
@@ -213,7 +210,7 @@ public class ConditionVisitorTest {
         Condition<TestKey> condition = mockVisitor.visitOrExpression(ctx);
         
         // The condition should evaluate to true (false OR true = true)
-        assertTrue(condition.evaluate(mock(RuleContext.class)));
+        assertThat(condition.evaluate(mock(RuleContext.class))).isTrue();
     }
     
     @Test
@@ -237,7 +234,7 @@ public class ConditionVisitorTest {
         Condition<TestKey> condition = mockVisitor.visitNotExpression(ctx);
         
         // The condition should evaluate to false (NOT true)
-        assertFalse(condition.evaluate(mock(RuleContext.class)));
+        assertThat(condition.evaluate(mock(RuleContext.class))).isFalse();
     }
     
     @Test
@@ -260,8 +257,8 @@ public class ConditionVisitorTest {
         // Visit the grouping expression context
         Condition<TestKey> condition = mockVisitor.visitGroupingExpression(ctx);
         
-        // The condition should evaluate to the same result as the enclosed expression
-        assertTrue(condition.evaluate(mock(RuleContext.class)));
+        // The condition should evaluate to true (same as the inner expression)
+        assertThat(condition.evaluate(mock(RuleContext.class))).isTrue();
     }
     
     @Test
@@ -292,16 +289,16 @@ public class ConditionVisitorTest {
         when(numberNode.getText()).thenReturn("35");
         
         // Set up the business check to return a value equal to the literal
-        when(ageCheck.execute(any())).thenReturn(Value.fromObject(35));
+        when(ageCheck.execute(any())).thenReturn(Value.of(35));
 
         // Create visitor and test
         ConditionVisitor<TestKey> visitor = new ConditionVisitor<>(businessChecks, metadata);
         Condition<TestKey> condition = visitor.visitComparisonOperation(ctx);
 
         // Verify the condition is not null and evaluates to the expected result
-        assertNotNull(condition);
+        assertThat(condition).isNotNull();
         RuleContext<TestKey> ruleContext = new RuleContext<>(TestKey.class);
-        assertTrue(condition.evaluate(ruleContext));
+        assertThat(condition.evaluate(ruleContext)).isTrue();
     }
     
     @Test
@@ -322,15 +319,15 @@ public class ConditionVisitorTest {
         when(argumentsCtx.literal()).thenReturn(Collections.emptyList());
         
         // Set up the business check to return a value
-        when(isPremiumCheck.execute(any())).thenReturn(Value.fromObject(true));
+        when(isPremiumCheck.execute(any())).thenReturn(Value.of(true));
         
         // Create visitor and test
         Condition<TestKey> result = visitor.visitBusinessBooleanExpression(ctx);
         
         // Verify the result
-        assertNotNull(result);
+        assertThat(result).isNotNull();
         RuleContext<TestKey> ruleContext = new RuleContext<>(TestKey.class);
-        assertTrue(result.evaluate(ruleContext));
+        assertThat(result.evaluate(ruleContext)).isTrue();
     }
     
     @Test
@@ -339,9 +336,9 @@ public class ConditionVisitorTest {
         SubExpressionContext ctx = mock(SubExpressionContext.class);
         
         // Verify that a RuleParserException is thrown
-        assertThrows(RuleParserException.class, () -> {
+        assertThatThrownBy(() -> {
             visitor.visitSubExpression(ctx);
-        });
+        }).isInstanceOf(RuleParserException.class);
     }
     
     // Indirect test for BusinessCheckVisitor with no arguments
@@ -361,15 +358,15 @@ public class ConditionVisitorTest {
         when(businessCheckExprCtx.arguments()).thenReturn(null);
         
         // Set up the business check to return a value
-        when(ageCheck.execute(any())).thenReturn(Value.fromObject(true));
+        when(ageCheck.execute(any())).thenReturn(Value.of(true));
         
         // Create visitor and test
         Condition<TestKey> result = visitor.visitBusinessBooleanExpression(ctx);
         
         // Verify the result
-        assertNotNull(result);
+        assertThat(result).isNotNull();
         RuleContext<TestKey> ruleContext = new RuleContext<>(TestKey.class);
-        assertTrue(result.evaluate(ruleContext));
+        assertThat(result.evaluate(ruleContext)).isTrue();
     }
     
     // Indirect test for BusinessCheckVisitor with number arguments
@@ -397,15 +394,15 @@ public class ConditionVisitorTest {
         when(argumentsCtx.literal()).thenReturn(Collections.emptyList());
         
         // Set up the business check to return a value
-        when(isPremiumCheck.execute(any())).thenReturn(Value.fromObject(true));
+        when(isPremiumCheck.execute(any())).thenReturn(Value.of(true));
         
         // Create visitor and test
         Condition<TestKey> result = visitor.visitBusinessBooleanExpression(ctx);
         
         // Verify the result
-        assertNotNull(result);
+        assertThat(result).isNotNull();
         RuleContext<TestKey> ruleContext = new RuleContext<>(TestKey.class);
-        assertTrue(result.evaluate(ruleContext));
+        assertThat(result.evaluate(ruleContext)).isTrue();
     }
     
     // Indirect test for BusinessCheckVisitor with string arguments
@@ -433,15 +430,15 @@ public class ConditionVisitorTest {
         when(argumentsCtx.literal()).thenReturn(Collections.emptyList());
         
         // Set up the business check to return a value
-        when(isPremiumCheck.execute(any())).thenReturn(Value.fromObject(true));
+        when(isPremiumCheck.execute(any())).thenReturn(Value.of(true));
         
         // Create visitor and test
         Condition<TestKey> result = visitor.visitBusinessBooleanExpression(ctx);
         
         // Verify the result
-        assertNotNull(result);
+        assertThat(result).isNotNull();
         RuleContext<TestKey> ruleContext = new RuleContext<>(TestKey.class);
-        assertTrue(result.evaluate(ruleContext));
+        assertThat(result.evaluate(ruleContext)).isTrue();
     }
     
     // Indirect test for BusinessCheckVisitor with unknown business check
@@ -463,9 +460,9 @@ public class ConditionVisitorTest {
         when(argumentsCtx.literal()).thenReturn(Collections.emptyList());
         
         // Verify that a RuleParserException is thrown
-        assertThrows(RuleParserException.class, () -> {
+        assertThatThrownBy(() -> {
             visitor.visitBusinessBooleanExpression(ctx);
-        });
+        }).isInstanceOf(RuleParserException.class);
     }
     
     @Test
@@ -495,15 +492,15 @@ public class ConditionVisitorTest {
         when(numberNode.getText()).thenReturn("30");
         
         // Set up the business check to return a value
-        when(ageCheck.execute(any())).thenReturn(Value.fromObject(30));
+        when(ageCheck.execute(any())).thenReturn(Value.of(30));
         
         // Set up the operator with an invalid value
         when(operatorCtx.getText()).thenReturn("INVALID");
         
         // Verify that a RuleParserException is thrown with the invalid operator
-        assertThrows(RuleParserException.class, () -> {
+        assertThatThrownBy(() -> {
             visitor.visitComparisonOperation(ctx);
-        });
+        }).isInstanceOf(RuleParserException.class);
     }
     
     @Test
@@ -534,15 +531,15 @@ public class ConditionVisitorTest {
         when(stringNode.getText()).thenReturn("\"test\"");
         
         // Set up the business check to return a value
-        when(ageCheck.execute(any())).thenReturn(Value.fromObject("test"));
+        when(ageCheck.execute(any())).thenReturn(Value.of("test"));
         
         // Create visitor and test
         Condition<TestKey> result = visitor.visitComparisonOperation(ctx);
         
         // Verify the result
-        assertNotNull(result);
+        assertThat(result).isNotNull();
         RuleContext<TestKey> ruleContext = new RuleContext<>(TestKey.class);
-        assertTrue(result.evaluate(ruleContext));
+        assertThat(result.evaluate(ruleContext)).isTrue();
     }
     
     @Test
@@ -569,15 +566,15 @@ public class ConditionVisitorTest {
         when(argumentsCtx.literal()).thenReturn(Collections.emptyList());
         
         // Set up the business check to return a value
-        when(isPremiumCheck.execute(any())).thenReturn(Value.fromObject(true));
+        when(isPremiumCheck.execute(any())).thenReturn(Value.of(true));
         
         // Create visitor and test
         Condition<TestKey> result = visitor.visitBusinessBooleanExpression(ctx);
         
         // Verify the result
-        assertNotNull(result);
+        assertThat(result).isNotNull();
         RuleContext<TestKey> ruleContext = new RuleContext<>(TestKey.class);
-        assertTrue(result.evaluate(ruleContext));
+        assertThat(result.evaluate(ruleContext)).isTrue();
     }
     
     @Test
@@ -591,9 +588,9 @@ public class ConditionVisitorTest {
         when(identifierNode.getText()).thenReturn("unknown");
         when(businessCheckCtx.arguments()).thenReturn(null);
         
-        assertThrows(RuleParserException.class, () -> {
+        assertThatThrownBy(() -> {
             visitor.visitBusinessBooleanExpression(ctx);
-        });
+        }).isInstanceOf(RuleParserException.class);
     }
 
     @Test
@@ -624,16 +621,16 @@ public class ConditionVisitorTest {
         when(stringNode.getText()).thenReturn("\"20\"");
         
         // Set up the business check to return a value equal to the literal
-        when(ageCheck.execute(any())).thenReturn(Value.fromObject("20"));
+        when(ageCheck.execute(any())).thenReturn(Value.of("20"));
         
         // Create visitor and test
         ConditionVisitor<TestKey> testVisitor = new ConditionVisitor<>(businessChecks, metadata);
         Condition<TestKey> condition = testVisitor.visitComparisonOperation(ctx);
         
         // Verify the result
-        assertNotNull(condition);
+        assertThat(condition).isNotNull();
         RuleContext<TestKey> ruleContext = new RuleContext<>(TestKey.class);
-        assertTrue(condition.evaluate(ruleContext));
+        assertThat(condition.evaluate(ruleContext)).isTrue();
     }
 
     // Helper method to create a token with the given text

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    
+    <parent>
+        <groupId>com.lyxtera</groupId>
+        <artifactId>axiom-parent</artifactId>
+        <version>1.0.1</version>
+    </parent>
+    
+    <artifactId>axiom-examples</artifactId>
+    <packaging>jar</packaging>
+    
+    <name>Axiom Examples</name>
+    <description>Example module demonstrating how to use the Axiom rule engine</description>
+
+    <properties>
+        <axiom.stubs.skip>false</axiom.stubs.skip>
+    </properties>
+
+    <dependencies>
+        <!-- Axiom Rules dependency -->
+        <dependency>
+            <groupId>com.lyxtera</groupId>
+            <artifactId>axiom-rules</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        
+        <!-- Google Guice -->
+        <dependency>
+            <groupId>com.google.inject</groupId>
+            <artifactId>guice</artifactId>
+            <version>5.1.0</version>
+        </dependency>
+        
+        <!-- Test dependencies -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        
+        <!-- JMH (Java Microbenchmark Harness) dependencies for performance testing -->
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-core</artifactId>
+            <version>1.36</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-generator-annprocess</artifactId>
+            <version>1.36</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Plugin to generate rule stubs -->
+            <plugin>
+                <groupId>com.lyxtera</groupId>
+                <artifactId>axiom-codegen</artifactId>
+                <version>${project.version}</version>
+                <executions>
+                    <execution>
+                        <id>generate-axiom-stubs</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>generate-stubs</goal>
+                        </goals>
+                        <configuration>
+                            <packageName>com.lyxtera.axiom.examples.rules</packageName>
+                            <contextKeyEnum>com.lyxtera.axiom.examples.rules.CustomerContextKey</contextKeyEnum>
+                            <ruleSets>${project.basedir}/src/main/resources/customer_discount_ruleset.yaml</ruleSets>
+                            <outputDirectory>src/main/java/</outputDirectory>
+                            <overwriteExisting>false</overwriteExisting>
+                            <skip>false</skip>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project> 

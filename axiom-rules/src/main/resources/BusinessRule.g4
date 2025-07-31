@@ -54,7 +54,7 @@ OR      : 'or' ;
 IDENTIFIER
         : [a-zA-Z_][a-zA-Z_0-9]*
         ;
-NUMBER  : [0-9]+ ('.' [0-9]+)? ;
+NUMBER  : '-'? [0-9]+ ('.' [0-9]+)? ;
 STRING  : '"' (~["\\] | '\\' .)* '"' ;
 WS      : [ \t\n\r]+ -> skip ;
 ILLEGAL_CHAR

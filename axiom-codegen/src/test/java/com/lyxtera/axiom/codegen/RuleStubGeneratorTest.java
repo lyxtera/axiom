@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -22,6 +21,7 @@ class RuleStubGeneratorTest {
     private Path testRuleSetPath;
     private Path outputDir;
     private static final String TEST_PACKAGE = "com.example.rules";
+    private static final String TEST_CONTEXT_KEY_ENUM = "com.example.rules.TestContextKey";
     
     @BeforeEach
     void setUp() throws IOException {
@@ -32,12 +32,13 @@ class RuleStubGeneratorTest {
     }
     
     @Test
-    void testGenerateStubs_CreatesExpectedFiles() throws IOException, URISyntaxException {
+    void testGenerateStubs_CreatesExpectedFiles() throws IOException {
         // Arrange
         RuleStubGenerator generator = RuleStubGenerator.builder()
             .withBasePackage(TEST_PACKAGE)
             .withOutputDirectory(outputDir.toString())
             .addRuleSet(testRuleSetPath.toString())
+            .withContextKeyEnum(TEST_CONTEXT_KEY_ENUM)
             .build();
         
         // Act
@@ -60,22 +61,32 @@ class RuleStubGeneratorTest {
         
         // Verify content of one file
         String checkContent = new String(Files.readAllBytes(highValueCustomerCheckFile));
+        System.out.println("Generated file content:");
+        System.out.println(checkContent);
+        
         assertThat(checkContent)
             .as("Should have correct package")
             .contains("package " + TEST_PACKAGE + ".checks");
         assertThat(checkContent)
             .as("Should implement BusinessCheck")
-            .contains("implements BusinessCheck<ContextKey>");
+            .contains("implements BusinessCheck<TestContextKey>");
         assertThat(checkContent)
             .as("Should have correct name in metadata")
             .contains("name = \"isHighValueCustomer\"");
         assertThat(checkContent)
             .as("Should have correct parameter annotation")
-            .contains("@Arg(\"threshold\")");
+            .contains("@Arg(\"thresholdAmount\")");
+        
+        // The import in the generated code has "import com.example.rules.TestTestContextKey;"
+        // but our assertion checks for "import com.example.rules.TestContextKey;"
+        String expectedImport = "import " + TEST_CONTEXT_KEY_ENUM + ";";
+        assertThat(checkContent)
+            .as("Should import the context key enum")
+            .contains(expectedImport);
     }
     
     @Test
-    void testGenerateStubs_SkipsExistingFiles() throws IOException, URISyntaxException {
+    void testGenerateStubs_SkipsExistingFiles() throws IOException {
         // Arrange
         // Create a directory and a file that already exists
         Path checksDir = outputDir.resolve(TEST_PACKAGE.replace('.', File.separatorChar) + File.separator + "checks");
@@ -90,6 +101,7 @@ class RuleStubGeneratorTest {
                 .withOutputDirectory(outputDir.toString())
                 .addRuleSet(testRuleSetPath.toString())
                 .overwriteExisting(false) // Don't overwrite
+                .withContextKeyEnum(TEST_CONTEXT_KEY_ENUM)
                 .build();
         
         // Act
@@ -104,7 +116,7 @@ class RuleStubGeneratorTest {
     }
     
     @Test
-    void testGenerateStubs_OverwritesExistingFilesWhenConfigured() throws IOException, URISyntaxException {
+    void testGenerateStubs_OverwritesExistingFilesWhenConfigured() throws IOException {
         // Arrange
         // Create a directory and a file that already exists
         Path checksDir = outputDir.resolve(TEST_PACKAGE.replace('.', File.separatorChar) + File.separator + "checks");
@@ -119,6 +131,7 @@ class RuleStubGeneratorTest {
                 .withOutputDirectory(outputDir.toString())
                 .addRuleSet(testRuleSetPath.toString())
                 .overwriteExisting(true) // Set to overwrite
+                .withContextKeyEnum(TEST_CONTEXT_KEY_ENUM)
                 .build();
         
         // Act
@@ -140,8 +153,9 @@ class RuleStubGeneratorTest {
         // Act & Assert
         assertThatThrownBy(() -> RuleStubGenerator.builder()
                 .addRuleSet(testRuleSetPath.toString())
+                .withContextKeyEnum(TEST_CONTEXT_KEY_ENUM)
                 .build())
-            .isInstanceOf(IllegalArgumentException.class)
+            .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("Base package must be specified");
     }
     
@@ -150,8 +164,20 @@ class RuleStubGeneratorTest {
         // Act & Assert
         assertThatThrownBy(() -> RuleStubGenerator.builder()
                 .withBasePackage(TEST_PACKAGE)
+                .withContextKeyEnum(TEST_CONTEXT_KEY_ENUM)
                 .build())
-            .isInstanceOf(IllegalArgumentException.class)
+            .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("At least one rule set path must be specified");
+    }
+    
+    @Test
+    void testBuilder_RequiresContextKeyEnum() {
+        // Act & Assert
+        assertThatThrownBy(() -> RuleStubGenerator.builder()
+                .withBasePackage(TEST_PACKAGE)
+                .addRuleSet(testRuleSetPath.toString())
+                .build())
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("Context key enum must be specified");
     }
 } 

@@ -30,7 +30,7 @@ public class Condition<K extends Enum<K>> implements Expression<K> {
     }
 
     public static <K extends Enum<K>> Condition<K> asComparison(RuleFunction<K> checkResult, Operator operator, Value value) {
-        return asBoolean(k -> checkResult.execute(k).getValue().equals(value.getValue()));
+        return asBoolean(k -> operator.apply(checkResult.execute(k), value));
     }
     
     public Expression<K> getLeft() {
@@ -50,8 +50,8 @@ public class Condition<K extends Enum<K>> implements Expression<K> {
         boolean leftValue = left.evaluate(context);
 
         if (right != null) {
-            Boolean rightValue = right.evaluate(context);
-            return operator.apply(leftValue, rightValue);
+            boolean rightValue = right.evaluate(context);
+            return operator.apply(Value.of(leftValue), Value.of(rightValue));
         }
 
         return leftValue;

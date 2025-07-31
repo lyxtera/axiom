@@ -1,9 +1,6 @@
 package com.lyxtera.axiom.api.model;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -17,7 +14,7 @@ import com.lyxtera.axiom.engine.RuleContext;
 /**
  * Test class for {@link Condition} and {@link Expression}.
  */
-public class ConditionTest {
+class ConditionTest {
 
     public enum TestKey {
         TEST_KEY
@@ -30,108 +27,108 @@ public class ConditionTest {
     private BusinessCheck<TestKey> businessCheck;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    public void testAsLogicalExpressionAnd() {
+    void testAsLogicalExpressionAnd() {
         // Create two expressions that return true and false
         Expression<TestKey> trueExpression = ctx -> true;
         Expression<TestKey> falseExpression = ctx -> false;
 
         // Test AND operator
         Condition<TestKey> andCondition = Condition.asLogicalExpression(trueExpression, Operator.AND, trueExpression);
-        assertTrue(andCondition.evaluate(context));
+        assertThat(andCondition.evaluate(context)).isTrue();
 
         andCondition = Condition.asLogicalExpression(trueExpression, Operator.AND, falseExpression);
-        assertFalse(andCondition.evaluate(context));
+        assertThat(andCondition.evaluate(context)).isFalse();
 
         andCondition = Condition.asLogicalExpression(falseExpression, Operator.AND, trueExpression);
-        assertFalse(andCondition.evaluate(context));
+        assertThat(andCondition.evaluate(context)).isFalse();
 
         andCondition = Condition.asLogicalExpression(falseExpression, Operator.AND, falseExpression);
-        assertFalse(andCondition.evaluate(context));
+        assertThat(andCondition.evaluate(context)).isFalse();
 
         // Verify getters
-        assertEquals(trueExpression, Condition.asLogicalExpression(trueExpression, Operator.AND, falseExpression).getLeft());
-        assertEquals(Operator.AND, Condition.asLogicalExpression(trueExpression, Operator.AND, falseExpression).getOperator());
-        assertEquals(falseExpression, Condition.asLogicalExpression(trueExpression, Operator.AND, falseExpression).getRight());
+        assertThat(Condition.asLogicalExpression(trueExpression, Operator.AND, falseExpression).getLeft()).isEqualTo(trueExpression);
+        assertThat(Condition.asLogicalExpression(trueExpression, Operator.AND, falseExpression).getOperator()).isEqualTo(Operator.AND);
+        assertThat(Condition.asLogicalExpression(trueExpression, Operator.AND, falseExpression).getRight()).isEqualTo(falseExpression);
     }
 
     @Test
-    public void testAsLogicalExpressionOr() {
+    void testAsLogicalExpressionOr() {
         // Create two expressions that return true and false
         Expression<TestKey> trueExpression = ctx -> true;
         Expression<TestKey> falseExpression = ctx -> false;
 
         // Test OR operator
         Condition<TestKey> orCondition = Condition.asLogicalExpression(trueExpression, Operator.OR, trueExpression);
-        assertTrue(orCondition.evaluate(context));
+        assertThat(orCondition.evaluate(context)).isTrue();
 
         orCondition = Condition.asLogicalExpression(trueExpression, Operator.OR, falseExpression);
-        assertTrue(orCondition.evaluate(context));
+        assertThat(orCondition.evaluate(context)).isTrue();
 
         orCondition = Condition.asLogicalExpression(falseExpression, Operator.OR, trueExpression);
-        assertTrue(orCondition.evaluate(context));
+        assertThat(orCondition.evaluate(context)).isTrue();
 
         orCondition = Condition.asLogicalExpression(falseExpression, Operator.OR, falseExpression);
-        assertFalse(orCondition.evaluate(context));
+        assertThat(orCondition.evaluate(context)).isFalse();
     }
 
     @Test
-    public void testAsNegation() {
+    void testAsNegation() {
         // Create two expressions that return true and false
         Expression<TestKey> trueExpression = ctx -> true;
         Expression<TestKey> falseExpression = ctx -> false;
 
         // Test negation
         Condition<TestKey> notCondition = Condition.asNegation(trueExpression);
-        assertFalse(notCondition.evaluate(context));
+        assertThat(notCondition.evaluate(context)).isFalse();
 
         notCondition = Condition.asNegation(falseExpression);
-        assertTrue(notCondition.evaluate(context));
+        assertThat(notCondition.evaluate(context)).isTrue();
     }
 
     @Test
-    public void testAsBoolean() {
+    void testAsBoolean() {
         // Create two expressions that return true and false
         Expression<TestKey> trueExpression = ctx -> true;
         Expression<TestKey> falseExpression = ctx -> false;
 
         // Test boolean condition
         Condition<TestKey> booleanCondition = Condition.asBoolean(trueExpression);
-        assertTrue(booleanCondition.evaluate(context));
+        assertThat(booleanCondition.evaluate(context)).isTrue();
 
         booleanCondition = Condition.asBoolean(falseExpression);
-        assertFalse(booleanCondition.evaluate(context));
+        assertThat(booleanCondition.evaluate(context)).isFalse();
     }
 
     @Test
-    public void testAsComparison() {
+    void testAsComparison() {
         // Mock a business check that returns a value
-        when(businessCheck.execute(context)).thenReturn(new Value(42, Value.Type.INTEGER));
+        when(businessCheck.execute(context)).thenReturn(new Value("42", Value.Type.NUMBER));
 
         // Test comparison with equal value
-        Condition<TestKey> equalsCondition = Condition.asComparison(businessCheck, Operator.EQUALS, new Value(42, Value.Type.INTEGER));
-        assertTrue(equalsCondition.evaluate(context));
+        Condition<TestKey> equalsCondition = Condition.asComparison(businessCheck, Operator.EQUALS, new Value("42", Value.Type.NUMBER));
+        assertThat(equalsCondition.evaluate(context)).isTrue();
 
         // Test comparison with different value
-        equalsCondition = Condition.asComparison(businessCheck, Operator.EQUALS, new Value(43, Value.Type.INTEGER));
-        assertFalse(equalsCondition.evaluate(context));
+        equalsCondition = Condition.asComparison(businessCheck, Operator.EQUALS, new Value("43", Value.Type.NUMBER));
+        assertThat(equalsCondition.evaluate(context)).isFalse();
     }
 
     @Test
-    public void testExpressionNegate() {
+    void testExpressionNegate() {
         // Create an expression that returns true
         Expression<TestKey> trueExpression = ctx -> true;
 
         // Test negation
         Expression<TestKey> negatedExpression = trueExpression.negate();
-        assertFalse(negatedExpression.evaluate(context));
+        assertThat(negatedExpression.evaluate(context)).isFalse();
 
         // Double negation should return the original value
         Expression<TestKey> doubleNegatedExpression = negatedExpression.negate();
-        assertTrue(doubleNegatedExpression.evaluate(context));
+        assertThat(doubleNegatedExpression.evaluate(context)).isTrue();
     }
 } 

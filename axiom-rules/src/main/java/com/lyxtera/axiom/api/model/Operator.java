@@ -5,6 +5,7 @@ import static com.lyxtera.axiom.api.exception.AxiomEngineException.TYPE_NUMBERS;
 import static com.lyxtera.axiom.api.exception.AxiomEngineException.TYPE_BOOLEANS;
 
 import com.lyxtera.axiom.api.exception.OperatorException;
+import com.lyxtera.axiom.api.model.Value.Type;
 
 /**
  * Represents operators used in business rule conditions.
@@ -25,13 +26,18 @@ public enum Operator {
          * 
          * @param left The left operand
          * @param right The right operand
-         * @param <T> The type of the operands
          * @return true if the operands are equal, false otherwise
          */
         @Override
-        public <T> boolean apply(T left, T right) {
-            if (left == null && right == null) return true;
-            if (left == null || right == null) return false;
+        public boolean apply(Value left, Value right) {
+            if (left == null && right == null) {
+                return true;
+            }
+
+            if (left == null || right == null) {
+                return false;
+            }
+
             return left.equals(right);
         }
     },
@@ -47,16 +53,16 @@ public enum Operator {
          * 
          * @param left The left operand
          * @param right The right operand
-         * @param <T> The type of the operands
          * @return true if the left operand is greater than the right operand
          * @throws OperatorException if the operands are not numbers
          */
         @Override
-        public <T> boolean apply(T left, T right) {
-            if (left instanceof Number && right instanceof Number) {
-                return ((Number) left).doubleValue() > ((Number) right).doubleValue();
+        public boolean apply(Value left, Value right) {
+            if (left == null || right == null || 
+                left.getType() != Type.NUMBER || right.getType() != Type.NUMBER) {
+                throw OperatorException.invalidType(getSymbol(), TYPE_NUMBERS);
             }
-            throw OperatorException.invalidType(getSymbol(), TYPE_NUMBERS);
+            return left.asNumber().compareTo(right.asNumber()) > 0;
         }
     },
 
@@ -71,16 +77,16 @@ public enum Operator {
          * 
          * @param left The left operand
          * @param right The right operand
-         * @param <T> The type of the operands
          * @return true if the left operand is less than the right operand
          * @throws OperatorException if the operands are not numbers
          */
         @Override
-        public <T> boolean apply(T left, T right) {
-            if (left instanceof Number && right instanceof Number) {
-                return ((Number) left).doubleValue() < ((Number) right).doubleValue();
+        public boolean apply(Value left, Value right) {
+            if (left == null || right == null || 
+                left.getType() != Type.NUMBER || right.getType() != Type.NUMBER) {
+                throw OperatorException.invalidType(getSymbol(), TYPE_NUMBERS);
             }
-            throw OperatorException.invalidType(getSymbol(), TYPE_NUMBERS);
+            return left.asNumber().compareTo(right.asNumber()) < 0;
         }
     }, 
 
@@ -95,16 +101,16 @@ public enum Operator {
          * 
          * @param left The left operand
          * @param right The right operand
-         * @param <T> The type of the operands
          * @return true if both operands are true
          * @throws OperatorException if the operands are not booleans
          */
         @Override
-        public <T> boolean apply(T left, T right) {
-            if (left instanceof Boolean && right instanceof Boolean) {
-                return ((Boolean) left) && ((Boolean) right);
+        public boolean apply(Value left, Value right) {
+            if (left == null || right == null || 
+                left.getType() != Type.BOOLEAN || right.getType() != Type.BOOLEAN) {
+                throw OperatorException.invalidType(getSymbol(), TYPE_BOOLEANS);
             }
-            throw OperatorException.invalidType(getSymbol(), TYPE_BOOLEANS);
+            return left.asBoolean() && right.asBoolean();
         }
     },
 
@@ -119,16 +125,16 @@ public enum Operator {
          * 
          * @param left The left operand
          * @param right The right operand
-         * @param <T> The type of the operands
          * @return true if either operand is true
          * @throws OperatorException if the operands are not booleans
          */
         @Override
-        public <T> boolean apply(T left, T right) {
-            if (left instanceof Boolean && right instanceof Boolean) {
-                return ((Boolean) left) || ((Boolean) right);
+        public boolean apply(Value left, Value right) {
+            if (left == null || right == null || 
+                left.getType() != Type.BOOLEAN || right.getType() != Type.BOOLEAN) {
+                throw OperatorException.invalidType(getSymbol(), TYPE_BOOLEANS);
             }
-            throw OperatorException.invalidType(getSymbol(), TYPE_BOOLEANS);
+            return left.asBoolean() || right.asBoolean();
         }
     },
     
@@ -142,12 +148,11 @@ public enum Operator {
          * 
          * @param left The left operand
          * @param right The right operand
-         * @param <T> The type of the operands
          * @return Never returns
          * @throws OperatorException always
          */
         @Override
-        public <T> boolean apply(T left, T right) {
+        public boolean apply(Value left, Value right) {
             throw OperatorException.unsupportedOperation(MSG_UNKNOWN_OPERATOR_TYPE);
         }
     };
@@ -180,7 +185,7 @@ public enum Operator {
      * @param <T> The type of the operands
      * @return The result of applying this operator to the operands
      */
-    public abstract <T> boolean apply(T left, T right);
+    public abstract boolean apply(Value left, Value right);
     
     /**
      * Returns the operator corresponding to the given symbol.

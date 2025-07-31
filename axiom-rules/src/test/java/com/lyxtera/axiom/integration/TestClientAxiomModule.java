@@ -2,7 +2,9 @@ package com.lyxtera.axiom.integration;
 
 import static java.util.stream.Collectors.toMap;
 
+import java.math.BigDecimal;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -50,7 +52,7 @@ public class TestClientAxiomModule extends AxiomModule<TestCtxKey> {
     @Override
     protected Map<String, RuleSetLoader<TestCtxKey>> getRegisteredLoaders() {
         return ruleSetPaths.entrySet().stream()
-            .collect(Collectors.toMap(e -> e.getKey(), v -> new YamlRuleSetLoader<>(v.getValue())));
+            .collect(Collectors.toMap(Entry::getKey, v -> new YamlRuleSetLoader<>(v.getValue())));
     } 
 
     @Override
@@ -87,7 +89,7 @@ public class TestClientAxiomModule extends AxiomModule<TestCtxKey> {
             
             // Return the actual value from context, or false if not present
             boolean result = isEnterprise.isPresent() && isEnterprise.get();
-            return new Value(result, Value.Type.BOOLEAN);
+            return Value.of(result);
         }
     }
 
@@ -102,23 +104,23 @@ public class TestClientAxiomModule extends AxiomModule<TestCtxKey> {
             Optional<String> businessFlow = context.get(TestCtxKey.BUSINESS_FLOW, String.class);
             if (businessFlow.isPresent() && "low_revenue".equals(businessFlow.get())) {
                 // This is critical for testNoRuleMatches_HighValueRuleset
-                return new Value(false, Value.Type.BOOLEAN);
+                return Value.of(false);
             }
             
             // Enterprise companies should not match this rule (return false)
             Optional<Boolean> isEnterprise = context.get(TestCtxKey.IS_ENTERPRISE_COMPANY, Boolean.class);
             if (isEnterprise.isPresent() && isEnterprise.get()) {
-                return new Value(false, Value.Type.BOOLEAN);
+                return Value.of(false);
             }
             
             // For test scenarios, if the threshold is around 1,000,000, return true
-            if (thresholdAmount.getType() == Value.Type.INTEGER && thresholdAmount.asInteger() == 1000000) {
+            if (thresholdAmount.getType() == Value.Type.NUMBER && thresholdAmount.asNumber().equals(BigDecimal.valueOf(1000000))) {
                 // For all other test cases, return true
-                return new Value(true, Value.Type.BOOLEAN);
+                return Value.of(true);
             }
             
             // Default to false
-            return new Value(false, Value.Type.BOOLEAN);
+            return Value.of(false);
         }
     }
 
@@ -133,14 +135,14 @@ public class TestClientAxiomModule extends AxiomModule<TestCtxKey> {
             Optional<String> businessFlow = context.get(TestCtxKey.BUSINESS_FLOW, String.class);
             if (businessFlow.isPresent() && 
                 ("no_fraud_signals".equals(businessFlow.get()) || "safe_transaction".equals(businessFlow.get()))) {
-                return new Value(false, Value.Type.BOOLEAN);
+                return Value.of(false);
             }
             
             // This check should only return true for testFraudSignalsRule_FraudDetectionRuleset
             // where we want the "Fraud Detection Rule" to match, not the "High Risk Score Rule"
             
             // Default to true for other scenarios
-            return new Value(true, Value.Type.BOOLEAN);
+            return Value.of(true);
         }
     }
 
@@ -154,7 +156,7 @@ public class TestClientAxiomModule extends AxiomModule<TestCtxKey> {
             // Check if context has business flow markers to override behavior
             Optional<String> businessFlow = context.get(TestCtxKey.BUSINESS_FLOW, String.class);
             if (businessFlow.isPresent() && "safe_transaction".equals(businessFlow.get())) {
-                return new Value(false, Value.Type.BOOLEAN);
+                return Value.of(false);
             }
             
             // In testFraudSignalsRule_FraudDetectionRuleset, we only want the hasFraudSignals rule to match
@@ -162,22 +164,22 @@ public class TestClientAxiomModule extends AxiomModule<TestCtxKey> {
             Optional<String> companyId = context.get(TestCtxKey.COMPANY_ID, String.class);
             if (companyId.isPresent() && "123".equals(companyId.get())) {
                 // This is in the testFraudSignalsRule_FraudDetectionRuleset test
-                return new Value(false, Value.Type.BOOLEAN);
+                return Value.of(false);
             }
             
             // For testHighRiskScoreRule_FraudDetectionRuleset, ensure this returns true
             if (businessFlow.isPresent() && "no_fraud_signals".equals(businessFlow.get())) {
-                if (threshold.getType() == Value.Type.INTEGER && threshold.asInteger() == 90) {
-                    return new Value(true, Value.Type.BOOLEAN);
+                if (threshold.getType() == Value.Type.NUMBER && threshold.asNumber().equals(BigDecimal.valueOf(90))) {
+                    return Value.of(true);
                 }
             }
             
             // For testing purposes, return true if threshold is 90 (matching ruleset)
-            if (threshold.getType() == Value.Type.INTEGER && threshold.asInteger() == 90) {
-                return new Value(true, Value.Type.BOOLEAN);
+            if (threshold.getType() == Value.Type.NUMBER && threshold.asNumber().equals(BigDecimal.valueOf(90))) {
+                return Value.of(true);
             }
             
-            return new Value(false, Value.Type.BOOLEAN);
+            return Value.of(false);
         }
     }
 
@@ -189,7 +191,7 @@ public class TestClientAxiomModule extends AxiomModule<TestCtxKey> {
         @Override
         public Value execute(RuleContext<TestCtxKey> context) {
             // For testing purposes, always return true
-            return new Value(true, Value.Type.BOOLEAN);
+            return Value.of(true);
         }
     }
 
@@ -201,7 +203,7 @@ public class TestClientAxiomModule extends AxiomModule<TestCtxKey> {
         @Override
         public Value execute(RuleContext<TestCtxKey> context) {
             // For testing purposes, always return true
-            return new Value(true, Value.Type.BOOLEAN);
+            return Value.of(true);
         }
     }
 }

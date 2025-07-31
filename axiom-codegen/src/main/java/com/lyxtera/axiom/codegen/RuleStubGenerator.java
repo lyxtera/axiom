@@ -2,12 +2,12 @@ package com.lyxtera.axiom.codegen;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -30,6 +30,7 @@ public class RuleStubGenerator {
     private final String outputDirectory;
     private final List<String> ruleSetPaths;
     private final boolean overwriteExisting;
+    private final String contextKeyEnum;
     
     // Template file paths
     private static final String CHECK_TEMPLATE_PATH = "codegen/check_template.tpl";
@@ -42,12 +43,15 @@ public class RuleStubGenerator {
      * @param outputDirectory  The output directory for generated Java files (e.g., "src/main/java")
      * @param ruleSetPaths     List of paths to rule set YAML files
      * @param overwriteExisting Whether to overwrite existing files (default: false)
+     * @param contextKeyEnum   The fully qualified name of the context enum class (e.g., "com.company.ContextKey")
      */
-    public RuleStubGenerator(String basePackage, String outputDirectory, List<String> ruleSetPaths, boolean overwriteExisting) {
+    public RuleStubGenerator(String basePackage, String outputDirectory, List<String> ruleSetPaths, 
+            boolean overwriteExisting, String contextKeyEnum) {
         this.basePackage = basePackage;
         this.outputDirectory = outputDirectory;
         this.ruleSetPaths = ruleSetPaths;
         this.overwriteExisting = overwriteExisting;
+        this.contextKeyEnum = contextKeyEnum;
     }
     
     /**
@@ -55,9 +59,8 @@ public class RuleStubGenerator {
      *
      * @return The number of files generated
      * @throws IOException If an error occurs while writing files
-     * @throws URISyntaxException If an error occurs while loading resources
      */
-    public int generateStubs() throws IOException, URISyntaxException {
+    public int generateStubs() throws IOException {
         int totalFilesGenerated = 0;
         
         for (String ruleSetPath : ruleSetPaths) {
@@ -68,7 +71,7 @@ public class RuleStubGenerator {
         return totalFilesGenerated;
     }
 
-    private int generateStubsForRuleSet(RuleSetDescriptor descriptor) throws IOException, URISyntaxException {
+    private int generateStubsForRuleSet(RuleSetDescriptor descriptor) throws IOException {
         int filesGenerated = 0;
         
         // Create directory structure
@@ -110,47 +113,32 @@ public class RuleStubGenerator {
         return overwriteExisting || !Files.exists(filePath);
     }
 
-    private void generateCheckStub(Path filePath, BusinessCheckDescriptor check) throws IOException, URISyntaxException {
-        String template = loadTemplateResource(CHECK_TEMPLATE_PATH);
-        
-        String className = toClassName(check.getName()) + "Check";
-        List<String> params = check.getParams() != null ? check.getParams() : Collections.emptyList();
-        
-        // Use simple string replacement instead of MessageFormat
-        String content = template
-            .replace("{0}", basePackage)
-            .replace("{1}", escapeJavadoc(check.getDescription() != null ? check.getDescription() : ""))
-            .replace("{2}", check.getName())
-            .replace("{3}", escapeJavadoc(check.getDescription() != null ? check.getDescription() : ""))
-            .replace("{4}", className)
-            .replace("{6}", generateParams(params));
-    
-        // Insert parameter javadoc after generation
-        String javadocParams = generateJavadocParams(params);
-        if (!javadocParams.isEmpty()) {
-            content = content.replace("     * @return", javadocParams + "\n     * @return");
-        }
-        
-        Files.createDirectories(filePath.getParent());
-        Files.writeString(filePath, content);
+    private void generateCheckStub(Path filePath, BusinessCheckDescriptor check) throws IOException {
+        generateStub(filePath, CHECK_TEMPLATE_PATH, "Check", check.getName(), check.getDescription(), check.getParams());
     }
     
+    private void generateActionStub(Path filePath, BusinessActionDescriptor action) throws IOException {
+        generateStub(filePath, ACTION_TEMPLATE_PATH, "Action", action.getName(), action.getDescription(), action.getParams());
+    }
+    
+    private void generateStub(Path filePath, String templatePath, String suffix, String name, 
+            String description, List<String> params) throws IOException {
+        var template = loadTemplateResource(templatePath);
+        var className = toClassName(name) + suffix;
+        
+        // Extract the simple class name from the fully qualified contextKeyEnum
+        var contextKeySimpleName = contextKeyEnum.substring(contextKeyEnum.lastIndexOf('.') + 1);
+        
+        var content = template
+            .replace("{0}", basePackage)
+            .replace("{1}", escapeJavadoc(description))
+            .replace("{2}", name)
+            .replace("{3}", escapeJavadoc(description))
+            .replace("{4}", className)
+            .replace("{5}", contextKeyEnum)
+            .replace("{6}", generateParams(params))
+            .replace("CTX-KEY-ENUM", contextKeySimpleName);
 
-    private void generateActionStub(Path filePath, BusinessActionDescriptor action) throws IOException, URISyntaxException {
-        String template = loadTemplateResource(ACTION_TEMPLATE_PATH);
-        
-        String className = toClassName(action.getName()) + "Action";
-        List<String> params = action.getParams() != null ? action.getParams() : Collections.emptyList();
-        
-        // Use simple string replacement instead of MessageFormat
-        String content = template
-                .replace("{0}", basePackage)
-                .replace("{1}", escapeJavadoc(action.getDescription() != null ? action.getDescription() : ""))
-                .replace("{2}", action.getName())
-                .replace("{3}", escapeJavadoc(action.getDescription() != null ? action.getDescription() : ""))
-                .replace("{4}", className)
-                .replace("{6}", generateParams(params));
-        
         // Insert parameter javadoc after generation
         String javadocParams = generateJavadocParams(params);
         if (!javadocParams.isEmpty()) {
@@ -165,9 +153,14 @@ public class RuleStubGenerator {
      * Loads a template from a resource file.
      * @return The template content or null if the file cannot be found or read
      */
-    private String loadTemplateResource(String templatePath) throws IOException, URISyntaxException {
-        Path path = Path.of(getClass().getClassLoader().getResource(templatePath).toURI());
-        return Files.readString(path);
+    private String loadTemplateResource(String templatePath) throws IOException {
+        try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(templatePath)) {
+            if (inputStream == null) {
+                throw new IOException("Template resource not found: " + templatePath);
+            }
+            
+            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+        }
     }
     
     /**
@@ -207,7 +200,7 @@ public class RuleStubGenerator {
         StringBuilder sb = new StringBuilder();
         
         // Always add RuleContext as the first parameter regardless of what's in the descriptor
-        sb.append("RuleContext<K> context");
+        sb.append("RuleContext<CTX-KEY-ENUM> ctx");
         
         // Then add any additional parameters from the descriptor
         if (params != null && !params.isEmpty()) {
@@ -231,7 +224,7 @@ public class RuleStubGenerator {
         StringBuilder sb = new StringBuilder();
         
         // Always add RuleContext javadoc
-        sb.append("     * @param context The rule execution context");
+        sb.append("     * @param ctx The rule execution context");
         
         // Then add any additional parameter javadocs
         if (params != null && !params.isEmpty()) {
@@ -298,6 +291,7 @@ public class RuleStubGenerator {
         private String outputDirectory;
         private final List<String> ruleSetPaths = new ArrayList<>();
         private boolean overwriteExisting = false;
+        private String contextKeyEnum;
         
         private Builder() {
         }
@@ -335,6 +329,14 @@ public class RuleStubGenerator {
         }
         
         /**
+         * Sets the context key enum.
+         */
+        public Builder withContextKeyEnum(String contextKeyEnum) {
+            this.contextKeyEnum = contextKeyEnum;
+            return this;
+        }
+        
+        /**
          * Builds the RuleStubGenerator.
          */
         public RuleStubGenerator build() {
@@ -345,7 +347,7 @@ public class RuleStubGenerator {
                 outputDir = "target/generated-sources/axiom";
             }
             
-            return new RuleStubGenerator(basePackage, outputDir, ruleSetPaths, overwriteExisting);
+            return new RuleStubGenerator(basePackage, outputDir, ruleSetPaths, overwriteExisting, contextKeyEnum);
         }
         
         /**
@@ -353,11 +355,16 @@ public class RuleStubGenerator {
          */
         private void validateState() {
             if (basePackage == null || basePackage.trim().isEmpty()) {
-                throw new IllegalArgumentException("Base package must be specified");
+                throw new IllegalStateException("Base package must be specified");
             }
-            
             if (ruleSetPaths.isEmpty()) {
-                throw new IllegalArgumentException("At least one rule set path must be specified");
+                throw new IllegalStateException("At least one rule set path must be specified");
+            }
+            if (contextKeyEnum == null || contextKeyEnum.trim().isEmpty()) {
+                throw new IllegalStateException("Context key enum must be specified");
+            }
+            if (outputDirectory == null || outputDirectory.trim().isEmpty()) {
+                throw new IllegalStateException("Output directory must be specified");
             }
         }
     }
@@ -367,6 +374,7 @@ public class RuleStubGenerator {
         String outputDirectory = "src/main/java";
         List<String> ruleSets = new ArrayList<>();
         boolean overwriteExisting = false;
+        String contextKeyEnum = null;
         
         // Parse command line arguments
         for (String arg : args) {
@@ -378,6 +386,8 @@ public class RuleStubGenerator {
                 ruleSets.add(arg.substring("--ruleSet=".length()));
             } else if (arg.startsWith("--overwriteExisting=")) {
                 overwriteExisting = Boolean.parseBoolean(arg.substring("--overwriteExisting=".length()));
+            } else if (arg.startsWith("--contextKeyEnum=")) {
+                contextKeyEnum = arg.substring("--contextKeyEnum=".length());
             }
         }
         
@@ -399,6 +409,10 @@ public class RuleStubGenerator {
                 .withBasePackage(basePackage)
                 .withOutputDirectory(outputDirectory)
                 .overwriteExisting(overwriteExisting);
+            
+            if (contextKeyEnum != null) {
+                builder.withContextKeyEnum(contextKeyEnum);
+            }
             
             for (String ruleSet : ruleSets) {
                 builder.addRuleSet(ruleSet);
@@ -423,5 +437,6 @@ public class RuleStubGenerator {
         System.err.println("  --outputDirectory=<dir>         Output directory (default: src/main/java)");
         System.err.println("  --ruleSet=<path>                Path to rule set YAML file (can be specified multiple times)");
         System.err.println("  --overwriteExisting=<true|false> Whether to overwrite existing files (default: false)");
+        System.err.println("  --contextKeyEnum=<enum>          Fully qualified name of the context enum class (e.g., com.company.ContextKey)");
     }
 } 

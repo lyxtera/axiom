@@ -237,7 +237,7 @@ void testRuleWithFutureEffectiveDate() {
     context.add(MyContextKey.TEST_VALUE, "test");
     
     // Execute rules - should not match because the rule is not effective yet
-    RuleExecutionResult<MyContextKey> result = orchestrator.executeFirstMatch(context);
+    RuleExecutionResult<MyContextKey> result = orchestrator.executeFirstMatchingRule(context);
     assertThat(result.hasMatch()).isFalse();
     
     // Now, we'll test with a FixedClock to simulate that it's 31 days in the future

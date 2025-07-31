@@ -43,7 +43,7 @@ context.add(MyContextKey.TRANSACTION_AMOUNT, 5000.0);
 context.add(MyContextKey.RISK_SCORE, 95);
 
 // Execute the first matching rule
-RuleExecutionResult<MyContextKey> result = orchestrator.executeFirstMatch(context);
+RuleExecutionResult<MyContextKey> result = orchestrator.executeFirstMatchingRule(context);
 if (result.hasMatch()) {
     BusinessRule<MyContextKey> matchedRule = result.getMatchedRule();
     System.out.println("Rule applied: " + matchedRule.getName());
@@ -56,7 +56,7 @@ Executes all matching rules in priority order:
 
 ```java
 // Execute all matching rules
-RuleExecutionResult<MyContextKey> result = orchestrator.executeAllMatches(context);
+RuleExecutionResult<MyContextKey> result = orchestrator.executeAllMatchingRules(context);
 if (result.hasMatches()) {
     List<BusinessRule<MyContextKey>> matchedRules = result.getMatchedRules();
     System.out.println("Number of rules applied: " + matchedRules.size());
@@ -93,15 +93,15 @@ if (firstMatchingRule.isPresent()) {
 The `RuleExecutionResult` class provides detailed information about the execution of rules:
 
 ```java
-RuleExecutionResult<MyContextKey> result = orchestrator.executeFirstMatch(context);
+RuleExecutionResult<MyContextKey> result = orchestrator.executeFirstMatchingRule(context);
 
 // Check if any rule matched
 boolean hasMatch = result.hasMatch();
 
-// Get the matched rule (for executeFirstMatch)
+// Get the matched rule (for executeFirstMatchingRule)
 BusinessRule<MyContextKey> matchedRule = result.getMatchedRule();
 
-// Get all matched rules (for executeAllMatches)
+// Get all matched rules (for executeAllMatchingRules)
 List<BusinessRule<MyContextKey>> matchedRules = result.getMatchedRules();
 
 // Get the execution context (which may have been modified by rule actions)
@@ -158,7 +158,7 @@ private RuleOrchestrator<MyContextKey> highValueApprovalOrchestrator;
 
 3. **Consider Context Modifications**: Remember that rule actions can modify the context, so the context after rule execution may be different from the input context.
 
-4. **Choose the Right Execution Strategy**: Use `executeFirstMatch` when you want only one rule to apply, and `executeAllMatches` when multiple rules should apply.
+4. **Choose the Right Execution Strategy**: Use `executeFirstMatchingRule` when you want only one rule to apply, and `executeAllMatchingRules` when multiple rules should apply.
 
 5. **Separate Orchestrators by Domain**: Create separate orchestrators for different domains or aspects of your application to keep rule execution focused.
 

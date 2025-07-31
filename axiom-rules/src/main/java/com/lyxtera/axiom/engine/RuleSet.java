@@ -92,6 +92,137 @@ public class RuleSet<K extends Enum<K>> {
     }
 
     /**
+     * Validates the rule set for consistency and correctness.
+     * This method is called during bootstrap to ensure the rule set is valid before it can be used.
+     * 
+     * @throws RuleException if any validation fails
+     */
+    public void validate() {
+        // 1. Check if we have any rules at all
+        if (rules.isEmpty()) {
+            throw RuleException.of("Rule set is empty");
+        }
+
+        // 2. Check for duplicate priorities
+        Map<Integer, List<PrioritizedRule<K>>> priorityGroups = rules.stream()
+            .collect(Collectors.groupingBy(rule -> rule.priority));
+            
+        priorityGroups.forEach((priority, rulesWithPriority) -> {
+            if (rulesWithPriority.size() > 1) {
+                String duplicateRules = rulesWithPriority.stream()
+                    .map(r -> r.getRule().getName())
+                    .collect(Collectors.joining(", "));
+                throw RuleException.of("Multiple rules found with priority %d: %s", priority, duplicateRules);
+            }
+        });
+
+        // 3. Validate metadata if present
+        if (metadata != null) {
+            validateMetadata();
+        }
+
+        // 4. Validate each rule's effective dates
+        ZonedDateTime now = ZonedDateTime.now();
+        rules.forEach(rule -> {
+            // Check if effectiveTo is not before effectiveFrom
+            if (rule.effectiveFrom != null && rule.effectiveTo != null 
+                && rule.effectiveTo.isBefore(rule.effectiveFrom)) {
+                throw RuleException.of(
+                    "Rule '%s' has effectiveTo date (%s) before effectiveFrom date (%s)",
+                    rule.getRule().getName(),
+                    rule.effectiveTo,
+                    rule.effectiveFrom
+                );
+            }
+
+            // Warn if rule is not yet effective or has expired
+            if (!rule.isEffectiveNow()) {
+                if (rule.effectiveFrom != null && rule.effectiveFrom.isAfter(now)) {
+                    System.out.printf("Warning: Rule '%s' is not yet effective (starts from %s)%n",
+                        rule.getRule().getName(), rule.effectiveFrom);
+                } else if (rule.effectiveTo != null && rule.effectiveTo.isBefore(now)) {
+                    System.out.printf("Warning: Rule '%s' has expired (ended at %s)%n",
+                        rule.getRule().getName(), rule.effectiveTo);
+                }
+            }
+        });
+
+        // 5. Validate each rule individually
+        rules.forEach(prioritizedRule -> validateRule(prioritizedRule.getRule()));
+    }
+
+    /**
+     * Validates the metadata of the rule set.
+     * 
+     * @throws RuleException if metadata validation fails
+     */
+    private void validateMetadata() {
+        // Check required metadata fields
+        if (metadata.getRuleSetName() == null || metadata.getRuleSetName().trim().isEmpty()) {
+            throw RuleException.of("Rule set name is required in metadata");
+        }
+
+        // Validate business check descriptors
+        metadata.getBusinessCheckDescriptors().forEach((name, descriptor) -> {
+            if (descriptor.getName() == null || descriptor.getName().trim().isEmpty()) {
+                throw RuleException.of("Business check descriptor name cannot be empty");
+            }
+            if (descriptor.getParams() == null) {
+                throw RuleException.of("Business check '%s' has null parameter list", name);
+            }
+        });
+
+        // Validate business action descriptors
+        metadata.getBusinessActionDescriptors().forEach((name, descriptor) -> {
+            if (descriptor.getName() == null || descriptor.getName().trim().isEmpty()) {
+                throw RuleException.of("Business action descriptor name cannot be empty");
+            }
+            if (descriptor.getParams() == null) {
+                throw RuleException.of("Business action '%s' has null parameter list", name);
+            }
+        });
+
+        // Check for descriptor name consistency
+        rules.forEach(prioritizedRule -> {
+            BusinessRule<K> rule = prioritizedRule.getRule();
+
+            // Validate business actions used in the rule
+            rule.getActions().forEach(action -> {
+                String actionName = action.getName();
+                if (!metadata.getBusinessActionDescriptors().containsKey(actionName)) {
+                    throw RuleException.of(
+                        "Rule '%s' uses undefined business action '%s'",
+                        rule.getName(), actionName
+                    );
+                }
+            });
+        });
+    }
+
+    /**
+     * Validates an individual rule.
+     * 
+     * @param rule The rule to validate
+     * @throws RuleException if rule validation fails
+     */
+    private void validateRule(BusinessRule<K> rule) {
+        // Check required rule properties
+        if (rule.getName() == null || rule.getName().trim().isEmpty()) {
+            throw RuleException.of("Rule name cannot be empty");
+        }
+
+        // Validate rule checks
+        if (rule.getCondition() == null) {
+            throw RuleException.of("Rule '%s' must have a condition", rule.getName());
+        }
+
+        // Validate rule actions
+        if (rule.getActions() == null || rule.getActions().isEmpty()) {
+            throw RuleException.of("Rule '%s' must have at least one action", rule.getName());
+        }
+    }
+
+    /**
      * Contains metadata information about checks, actions, and rules.
      * This is used for better error reporting and documentation.
      */

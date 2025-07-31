@@ -22,7 +22,7 @@ public class CtxGet<K extends Enum<K>> implements BusinessCheck<K> {
         }
 
         return ctx.get(ctx.keyByValue(ctxKey), Object.class)
-            .map(Value::fromObject)
+            .map(Value::of)
             .orElse(Value.EMPTY);
     }
 }

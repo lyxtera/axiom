@@ -28,6 +28,9 @@
         - rule-orchestrator-injection.md
         - rule-orchestrator-operations.md
 
+- Integration & Frameworks
+    - Spring Boot Integration (covered in rule-orchestrator-injection.md)
+
 - Testing & Best Practices
     - rule-testing.md
     - best-practices.md

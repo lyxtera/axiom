@@ -1,11 +1,14 @@
 package com.lyxtera.axiom.engine;
 
+import static com.lyxtera.axiom.api.exception.AxiomEngineException.MSG_RULE_EVALUATION_FAILED;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.lyxtera.axiom.api.exception.AxiomEngineException;
 import com.lyxtera.axiom.api.model.BusinessRule;
 
 /**
@@ -27,6 +30,7 @@ public class RuleOrchestrator<K extends Enum<K>> {
      */
     public RuleOrchestrator(RuleSet<K> ruleSet) {
         this.ruleSet = ruleSet;
+        ruleSet.validate();
     }
 
     /**
@@ -37,7 +41,7 @@ public class RuleOrchestrator<K extends Enum<K>> {
      */
     public Optional<BusinessRule<K>> getFirstMatchingRule(RuleContext<K> context) {
         return ruleSet.getRulesInPriorityOrder().stream()
-            .filter(rule -> rule.getCondition().evaluate(context))
+            .filter(rule -> evaluateCondition(rule, context))
             .findFirst();
     }
     
@@ -58,7 +62,7 @@ public class RuleOrchestrator<K extends Enum<K>> {
             Boolean firstRuleResult = null;
             
             for (BusinessRule<K> rule : ruleSet.getRulesInPriorityOrder()) {
-                if (rule.getCondition().evaluate(context)) {
+                if (evaluateCondition(rule, context)) {
                     matchedRules.add(rule);
                     
                     // Execute the rule and store the result
@@ -84,7 +88,7 @@ public class RuleOrchestrator<K extends Enum<K>> {
                 firstRuleResult
             );
         } catch (Exception e) {
-            return RuleExecutionResult.failure("Error executing rules: " + e.getMessage());
+            return RuleExecutionResult.failure(String.format("Execution failed. %s", e.getMessage()));
         }
     }
 
@@ -121,5 +125,13 @@ public class RuleOrchestrator<K extends Enum<K>> {
      */
     public RuleSet<K> getRuleSet() {
         return ruleSet;
+    }
+
+    private boolean evaluateCondition(BusinessRule<K> rule, RuleContext<K> context) {
+        try {
+            return rule.getCondition().evaluate(context);
+        } catch (AxiomEngineException e) {
+            throw AxiomEngineException.of(MSG_RULE_EVALUATION_FAILED, rule.getName(), e.getMessage());
+        }
     }
 } 

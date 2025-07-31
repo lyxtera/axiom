@@ -87,20 +87,20 @@ public final class ArgAwareRuleFunction<K extends Enum<K>> implements RuleFuncti
      */
     @Override
     public final Value execute(RuleContext<K> ctx) {
-        // If the number of args doesn't match the expected args count then delegate to the original function
-        if (args.isEmpty()) {
-            return delegate.execute(ctx);
-        }
-
-        Object[] invokeArgs = new Object[args.size() + 1];
-        invokeArgs[0] = ctx;
-
-        // Add the arguments in order
-        for (int i = 0; i < args.size(); i++) {
-            invokeArgs[i + 1] = args.get(i);
-        }
-
         try {
+            // If the number of args doesn't match the expected args count then delegate to the original function
+            if (args.isEmpty()) {
+                return delegate.execute(ctx);
+            }
+
+            Object[] invokeArgs = new Object[args.size() + 1];
+            invokeArgs[0] = ctx;
+
+            // Add the arguments in order
+            for (int i = 0; i < args.size(); i++) {
+                invokeArgs[i + 1] = args.get(i);
+            }
+
             return (Value) methodHandle.invokeWithArguments(invokeArgs);
         } catch (Throwable e) {
             // Create a more detailed error message by trying to use metadata

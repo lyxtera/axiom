@@ -31,7 +31,7 @@ public class OrderProcessingService {
         
         // Execute rules
         RuleExecutionResult<OrderContextKey> result = 
-            discountRuleOrchestrator.executeAllMatches(context);
+            discountRuleOrchestrator.executeAllMatchingRules(context);
         
         // Process results
         if (result.hasMatches()) {
@@ -120,7 +120,7 @@ public class OrderService {
         
         // First check for fraud
         RuleExecutionResult<OrderContextKey> fraudResult = 
-            fraudDetectionOrchestrator.executeFirstMatchingRule(context);
+            fraudDetectionOrchestrator.executeFirstMatchingRuleingRule(context);
         
         // If fraud detected, reject the order
         if (fraudResult.hasMatches()) {
@@ -131,11 +131,11 @@ public class OrderService {
         
         // Apply discounts
         RuleExecutionResult<OrderContextKey> discountResult = 
-            discountOrchestrator.executeAllMatches(context);
+            discountOrchestrator.executeAllMatchingRules(context);
         
         // Apply shipping rules
         RuleExecutionResult<OrderContextKey> shippingResult = 
-            shippingRulesOrchestrator.executeAllMatches(context);
+            shippingRulesOrchestrator.executeAllMatchingRules(context);
         
         // Update order with all rule results
         updateOrderFromRuleResults(order, context);
@@ -169,7 +169,7 @@ public class RuleExecutionService {
             throw new IllegalArgumentException("No rule set found with name: " + ruleSetName);
         }
         
-        return orchestrator.executeAllMatches(context);
+        return orchestrator.executeAllMatchingRules(context);
     }
 }
 ```
@@ -214,7 +214,7 @@ public class OrderService {
         RuleOrchestrator<OrderContextKey> orchestrator = discountOrchestratorProvider.get();
         
         // Execute rules
-        RuleExecutionResult<OrderContextKey> result = orchestrator.executeAllMatches(context);
+        RuleExecutionResult<OrderContextKey> result = orchestrator.executeAllMatchingRules(context);
         
         // Process results...
         return order;

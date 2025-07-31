@@ -52,7 +52,7 @@ context.add(MyContextKey.RISK_SCORE, 95);
 context.add(MyContextKey.IS_NEW_CUSTOMER, true);
 
 // Execute the first matching rule
-RuleExecutionResult<MyContextKey> result = orchestrator.executeFirstMatch(context);
+RuleExecutionResult<MyContextKey> result = orchestrator.executeFirstMatchingRule(context);
 ```
 
 In this example:
@@ -60,8 +60,8 @@ In this example:
 2. Rules are filtered by their effective dates (only currently active rules are considered)
 3. Remaining rules are sorted by priority (lowest to highest number)
 4. Rules are evaluated in priority order
-5. With `executeFirstMatch()`, once a rule matches (its condition evaluates to true), its actions are executed and no further rules are evaluated
-6. With `executeAllMatches()`, all matching rules are executed in priority order
+5. With `executeFirstMatchingRule()`, once a rule matches (its condition evaluates to true), its actions are executed and no further rules are evaluated
+6. With `executeAllMatchingRules()`, all matching rules are executed in priority order
 
 ## Code Example: Priority Order Handling
 

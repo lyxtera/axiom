@@ -30,7 +30,7 @@ public Value execute(RuleContext<OrderContextKey> context, @Arg("discount") Valu
         throw new IllegalArgumentException("Discount must be a number");
     }
     
-    Double discount = discountParam.asDouble();
+    Double discount = discountParam.asNumber().doubleValue();
     
     // Validate discount is within acceptable range
     if (discount < 0 || discount > 100) {
@@ -273,7 +273,7 @@ public Value execute(RuleContext<OrderContextKey> context, @Arg("amount") Value 
         .orElse(ValidationLevel.NORMAL);
     
     // Validate amount based on level
-    Double amount = amountParam.asDouble();
+    Double amount = amountParam.asNumber().doubleValue();
     if (amount < 0) {
         switch (level) {
             case STRICT:
@@ -486,7 +486,7 @@ public class CustomerDiscountCheck implements BusinessCheck<OrderContextKey> {
                 new IllegalArgumentException("Threshold must be a number"));
         }
         
-        Double thresholdValue = threshold.asDouble();
+        Double thresholdValue = threshold.asNumber().doubleValue();
         if (thresholdValue < 0) {
             return result.invalid(
                 new IllegalArgumentException("Threshold cannot be negative"));

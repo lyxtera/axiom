@@ -15,7 +15,8 @@ public class AxiomEngineException extends RuntimeException {
     public static final String MSG_UNKNOWN_OPERATOR_TYPE = "Unknown operator";
     public static final String TYPE_NUMBERS = "numbers";
     public static final String TYPE_BOOLEANS = "booleans";
-    
+    public static final String MSG_RULE_EVALUATION_FAILED = "Failed to evaluate rule '%s': %s";
+
     // Parser related messages
     public static final String MSG_UNKNOWN_EXPRESSION_TYPE = "Unknown expression type: %s";
     public static final String MSG_UNKNOWN_COMPARISON_TYPE = "Unknown comparison type: %s";
@@ -35,13 +36,13 @@ public class AxiomEngineException extends RuntimeException {
     public static final String MSG_FUNCTION_EXECUTION_ERROR = "Error executing function: %s";
     public static final String MSG_CTXGET_REQUIRES_STRING = "[ctxGet] requires exactly one string argument";
     public static final String MSG_METHOD_HANDLE_ERROR = "%s: Error creating method handle for %s";
-    
+    public static final String MSG_UNSUPPORTED_VALUE_TYPE = "Unsupported value type: %s[%s]";
+
     // Rule loading related messages
     public static final String MSG_RULESET_LOAD_ERROR = "Failed to load ruleset from %s: %s";
     public static final String MSG_RULESET_PARSE_ERROR = "Failed to parse ruleset: %s";
     public static final String MSG_VALIDATION_ERRORS = "Validation errors found:\n%s";
     public static final String MSG_RULE_PARSE_ERROR = "Failed to parse rule '%s' with expression: '%s'";
-    
     /**
      * Constructs a new AxiomEngineException with the specified message.
      *
