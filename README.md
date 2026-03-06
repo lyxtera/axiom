@@ -16,6 +16,7 @@ Axiom is a lightweight rule engine designed to simplify complex "if-this-then-th
 - **🎯 Type Safety** - Compile-time type checking with generated stubs
 - **📊 Expression Language** - ANTLR-based rule expression parser
 - **🔄 Hot Reloading** - Update rules without application restart
+- **⚡ Dynamic Rule Execution** - Execute caller-supplied rule expressions at runtime with entity-based permission control
 
 ## 🚀 Quick Start
 
@@ -201,6 +202,9 @@ expression: (isPremiumCustomer() or isHighValueOrder(500)) and not hasExistingDi
 rulesetName: "My Rule Set"
 rulesetDescription: "Description of what this rule set does"
 
+# Opt-in to allow external entities to submit rule expressions at runtime (default: false)
+allowDynamicExecution: false
+
 businessChecks:
   - name: checkName
     description: "Human readable description"
@@ -210,6 +214,12 @@ businessActions:
   - name: actionName
     description: "Human readable description" 
     params: [param1, param2]  # Optional parameters
+
+# Required when allowDynamicExecution is true — defines per-entity function permissions
+entityPermissions:
+  - name: myService
+    allowedFunctions: [checkName, actionName]  # Functions this entity may use
+    deniedFunctions:  [dangerousAction]         # Denied takes precedence over allowed
 
 rules:
   - name: "Rule Name"
@@ -268,6 +278,109 @@ void testCustomerDiscountRule() {
 }
 ```
 
+### Dynamic Rule Execution
+
+Dynamic rule execution lets external services submit rule expressions at runtime and have them evaluated against a pre-loaded ruleset — without requiring application redeployment. Each ruleset controls who can do this, and which functions each caller is permitted to use.
+
+#### 1. Enable dynamic execution in your ruleset YAML
+
+```yaml
+rulesetName: "Checkout Discount Ruleset"
+rulesetDescription: "Metadata for dynamically applying discounts to customer orders"
+
+allowDynamicExecution: true
+
+businessChecks:
+  - name: successfulOrders
+    description: "How many successful orders the customer has placed"
+  - name: isFirstTimeCustomer
+    description: "Checks if this is the customer's first order"
+
+businessActions:
+  - name: applyDiscount
+    description: "Applies a percentage discount to the order"
+    params: [percentage]
+  - name: updateNote
+    description: "Attaches a note to the order"
+    params: [noteText]
+  - name: updateTotalAmount
+    description: "Directly modifies the order total — sensitive operation"
+    params: [amount]
+
+entityPermissions:
+  - name: checkoutService
+    allowedFunctions: [successfulOrders, isFirstTimeCustomer, applyDiscount, updateNote]
+    deniedFunctions:  [updateTotalAmount]   # denied takes precedence
+
+  - name: adminService
+    allowedFunctions: [successfulOrders, isFirstTimeCustomer, applyDiscount, updateNote, updateTotalAmount]
+    deniedFunctions:  []
+```
+
+#### 2. Create the orchestrator with a parser
+
+Dynamic rule execution requires parsing rule expressions at runtime. Pass a `Parser` instance to the orchestrator:
+
+```java
+Parser<CheckoutContextKey> parser = new DefaultParser<>();
+RuleOrchestrator<CheckoutContextKey> orchestrator = new RuleOrchestrator<>(ruleSet, parser);
+```
+
+#### 3. Execute dynamic rules
+
+**Simple form** — pass a list of expressions and an entity name:
+
+```java
+List<String> expressions = Arrays.asList(
+    "successfulOrders() > 15 then applyDiscount(10), updateNote(\"VIP\")",
+    "successfulOrders() > 5  then applyDiscount(5),  updateNote(\"Returning customer\")",
+    "isFirstTimeCustomer()   then applyDiscount(3),  updateNote(\"Welcome discount\")"
+);
+
+RuleContext<CheckoutContextKey> context = new RuleContext<>(CheckoutContextKey.class);
+context.add(CheckoutContextKey.ORDER_COUNT, 20);
+context.add(CheckoutContextKey.ORDER_VALUE, 150.0);
+
+RuleExecutionResult<CheckoutContextKey> result =
+    orchestrator.executeDynamicRules(context, expressions, "checkoutService");
+```
+
+**Advanced form** — use `DynamicRuleRequest` for full control:
+
+```java
+DynamicRuleRequest<CheckoutContextKey> request = new DynamicRuleRequest<>(
+    "checkoutService", "Checkout Discount Ruleset", expressions);
+
+RuleExecutionResult<CheckoutContextKey> result =
+    orchestrator.executeDynamicRuleSet(context, request);
+```
+
+#### 4. Permission model
+
+| Scenario | Result |
+|---|---|
+| Entity not listed in `entityPermissions` | `DynamicRuleValidationException` – no permissions defined |
+| Function not in `allowedFunctions` | `DynamicRuleValidationException` – function not permitted |
+| Function in both allowed and `deniedFunctions` | Denied — `deniedFunctions` takes precedence |
+| Function not defined in the ruleset at all | `DynamicRuleValidationException` – function does not exist |
+| `allowDynamicExecution: false` | `DynamicRuleValidationException` – dynamic execution not allowed |
+| Parse error in an expression | `DynamicRuleValidationException` – rule parsing failed |
+
+#### 5. Handling validation failures
+
+```java
+try {
+    RuleExecutionResult<CheckoutContextKey> result =
+        orchestrator.executeDynamicRules(context, expressions, "orderService");
+} catch (DynamicRuleValidationException e) {
+    System.err.println("Validation failed: " + e.getMessage());
+
+    if (e.hasPermissionViolations()) {
+        e.getViolations().forEach(v -> System.err.println("  - " + v));
+    }
+}
+```
+
 ## 🚀 Performance
 Axiom is designed for high performance:
 
@@ -304,6 +417,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 - ✅ Maven plugin for code generation
 - ✅ Example applications
 - ✅ Documentation
+- ✅ Dynamic rule execution with entity-based permission control
 
 ### Upcoming Features
 - 🔄 Spring Boot starter

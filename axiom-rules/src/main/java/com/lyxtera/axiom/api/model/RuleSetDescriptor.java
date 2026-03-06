@@ -48,6 +48,20 @@ public class RuleSetDescriptor {
     private List<RuleDescriptor> rules = new ArrayList<>();
     
     /**
+     * Flag indicating whether this rule set allows dynamic rule execution.
+     * If false, external dynamic rules cannot be executed against this ruleset.
+     */
+    @JsonProperty("allowDynamicExecution")
+    private boolean allowDynamicExecution = false;
+    
+    /**
+     * Entity permissions for dynamic rule execution.
+     * Defines which entities can use which business functions in dynamic rules.
+     */
+    @JsonProperty("entityPermissions")
+    private List<EntityPermissionDescriptor> entityPermissions = new ArrayList<>();
+    
+    /**
      * Getters and setters
      */
     public String getRulesetName() {
@@ -90,21 +104,91 @@ public class RuleSetDescriptor {
         this.rules = rules;
     }
     
+    /**
+     * Gets the dynamic execution flag.
+     *
+     * @return true if dynamic execution is allowed, false otherwise
+     */
+    public boolean isAllowDynamicExecution() {
+        return allowDynamicExecution;
+    }
+    
+    /**
+     * Sets the dynamic execution flag.
+     *
+     * @param allowDynamicExecution true to allow dynamic execution, false otherwise
+     */
+    public void setAllowDynamicExecution(boolean allowDynamicExecution) {
+        this.allowDynamicExecution = allowDynamicExecution;
+    }
+    
+    /**
+     * Gets the entity permissions for dynamic rule execution.
+     *
+     * @return The list of entity permissions
+     */
+    public List<EntityPermissionDescriptor> getEntityPermissions() {
+        return entityPermissions;
+    }
+    
+    /**
+     * Sets the entity permissions for dynamic rule execution.
+     *
+     * @param entityPermissions The list of entity permissions
+     */
+    public void setEntityPermissions(List<EntityPermissionDescriptor> entityPermissions) {
+        this.entityPermissions = entityPermissions != null ? new ArrayList<>(entityPermissions) : new ArrayList<>();
+    }
+    
+    /**
+     * Finds the entity permission descriptor for the specified entity name.
+     *
+     * @param entityName The name of the entity to find
+     * @return The entity permission descriptor, or null if not found
+     */
+    public EntityPermissionDescriptor findEntityPermission(String entityName) {
+        if (entityName == null) {
+            return null;
+        }
+        
+        return entityPermissions.stream()
+            .filter(permission -> entityName.equals(permission.getName()))
+            .findFirst()
+            .orElse(null);
+    }
+    
+    /**
+     * Adds an entity permission to the list.
+     *
+     * @param entityPermission The entity permission to add
+     */
+    public void addEntityPermission(EntityPermissionDescriptor entityPermission) {
+        if (entityPermission != null) {
+            // Remove existing permission for the same entity if it exists
+            entityPermissions.removeIf(existing -> 
+                entityPermission.getName() != null && 
+                entityPermission.getName().equals(existing.getName()));
+            entityPermissions.add(entityPermission);
+        }
+    }
+    
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         RuleSetDescriptor that = (RuleSetDescriptor) o;
-        return Objects.equals(rulesetName, that.rulesetName) &&
+        return allowDynamicExecution == that.allowDynamicExecution &&
+               Objects.equals(rulesetName, that.rulesetName) &&
                Objects.equals(rulesetDescription, that.rulesetDescription) &&
                Objects.equals(businessChecks, that.businessChecks) &&
                Objects.equals(businessActions, that.businessActions) &&
-               Objects.equals(rules, that.rules);
+               Objects.equals(rules, that.rules) &&
+               Objects.equals(entityPermissions, that.entityPermissions);
     }
     
     @Override
     public int hashCode() {
-        return Objects.hash(rulesetName, rulesetDescription, businessChecks, businessActions, rules);
+        return Objects.hash(rulesetName, rulesetDescription, businessChecks, businessActions, rules, allowDynamicExecution, entityPermissions);
     }
     
     @Override
@@ -115,6 +199,8 @@ public class RuleSetDescriptor {
                ", businessChecks=" + businessChecks +
                ", businessActions=" + businessActions +
                ", rules=" + rules +
+               ", allowDynamicExecution=" + allowDynamicExecution +
+               ", entityPermissions=" + entityPermissions +
                '}';
     }
     

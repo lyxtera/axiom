@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import com.lyxtera.axiom.api.exception.RuleException;
 import com.lyxtera.axiom.api.model.BusinessRule;
+import com.lyxtera.axiom.api.model.EntityPermissionDescriptor;
 import com.lyxtera.axiom.api.model.RuleSetDescriptor.BusinessActionDescriptor;
 import com.lyxtera.axiom.api.model.RuleSetDescriptor.BusinessCheckDescriptor;
 
@@ -229,8 +230,10 @@ public class RuleSet<K extends Enum<K>> {
     public static class Metadata {
         private final Map<String, BusinessCheckDescriptor> checkDescriptors = new HashMap<>();
         private final Map<String, BusinessActionDescriptor> actionDescriptors = new HashMap<>();
+        private final Map<String, EntityPermissionDescriptor> entityPermissions = new HashMap<>();
         private String ruleSetName;
         private String ruleSetDescription;
+        private boolean allowDynamicExecution = false;
         
         /**
          * Sets the descriptors for business checks
@@ -270,6 +273,31 @@ public class RuleSet<K extends Enum<K>> {
          */
         void setRuleSetDescription(String description) {
             this.ruleSetDescription = description;
+        }
+        
+        /**
+         * Sets the dynamic execution flag
+         * 
+         * @param allowDynamicExecution Whether dynamic execution is allowed
+         */
+        void setAllowDynamicExecution(boolean allowDynamicExecution) {
+            this.allowDynamicExecution = allowDynamicExecution;
+        }
+        
+        /**
+         * Sets the entity permissions for dynamic rule execution
+         * 
+         * @param permissions The list of entity permission descriptors
+         */
+        void setEntityPermissions(List<EntityPermissionDescriptor> permissions) {
+            entityPermissions.clear();
+            if (permissions != null) {
+                for (EntityPermissionDescriptor permission : permissions) {
+                    if (permission.getName() != null) {
+                        entityPermissions.put(permission.getName(), permission);
+                    }
+                }
+            }
         }
         
         /**
@@ -326,6 +354,44 @@ public class RuleSet<K extends Enum<K>> {
          */
         public String getRuleSetDescription() {
             return ruleSetDescription;
+        }
+        
+        /**
+         * Gets whether dynamic execution is allowed
+         * 
+         * @return true if dynamic execution is allowed, false otherwise
+         */
+        public boolean isAllowDynamicExecution() {
+            return allowDynamicExecution;
+        }
+        
+        /**
+         * Gets the entity permission descriptor for the given entity name
+         * 
+         * @param entityName The name of the entity
+         * @return The entity permission descriptor, or null if not found
+         */
+        public EntityPermissionDescriptor getEntityPermission(String entityName) {
+            return entityPermissions.get(entityName);
+        }
+        
+        /**
+         * Gets a map of all entity permissions
+         * 
+         * @return Map of entity permissions keyed by entity name
+         */
+        public Map<String, EntityPermissionDescriptor> getEntityPermissions() {
+            return Collections.unmodifiableMap(entityPermissions);
+        }
+        
+        /**
+         * Checks if the specified entity has any permissions defined
+         * 
+         * @param entityName The name of the entity
+         * @return true if the entity has permissions, false otherwise
+         */
+        public boolean hasEntityPermissions(String entityName) {
+            return entityPermissions.containsKey(entityName);
         }
         
         /**

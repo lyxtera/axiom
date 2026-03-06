@@ -45,6 +45,8 @@ public abstract class RuleSetLoader<K extends Enum<K>> {
         metadata.setRuleSetDescription(ruleSetDescriptor.getRulesetDescription());
         metadata.setBusinessCheckDescriptors(ruleSetDescriptor.getBusinessChecks());
         metadata.setBusinessActionDescriptors(ruleSetDescriptor.getBusinessActions());
+        metadata.setAllowDynamicExecution(ruleSetDescriptor.isAllowDynamicExecution());
+        metadata.setEntityPermissions(ruleSetDescriptor.getEntityPermissions());
 
         ruleSet.setMetadata(metadata);
         
