@@ -376,6 +376,12 @@ public class RuleSetDescriptor {
          */
         @JsonProperty("expression")
         private String expression;
+
+        /**
+         * Optional child ruleset reference for gate rules.
+         */
+        @JsonProperty("onMatchForwardTo")
+        private String onMatchForwardTo;
         
         /**
          * The priority of the rule.
@@ -436,6 +442,14 @@ public class RuleSetDescriptor {
         public void setPriority(int priority) {
             this.priority = priority;
         }
+
+        public String getOnMatchForwardTo() {
+            return onMatchForwardTo;
+        }
+
+        public void setOnMatchForwardTo(String onMatchForwardTo) {
+            this.onMatchForwardTo = onMatchForwardTo;
+        }
         
         public ZonedDateTime getEffectiveFrom() {
             return effectiveFrom;
@@ -470,6 +484,7 @@ public class RuleSetDescriptor {
                    Objects.equals(name, that.name) &&
                    Objects.equals(description, that.description) &&
                    Objects.equals(expression, that.expression) &&
+                   Objects.equals(onMatchForwardTo, that.onMatchForwardTo) &&
                    Objects.equals(effectiveFrom, that.effectiveFrom) &&
                    Objects.equals(effectiveTo, that.effectiveTo) &&
                    Objects.equals(metadata, that.metadata);
@@ -477,7 +492,7 @@ public class RuleSetDescriptor {
         
         @Override
         public int hashCode() {
-            return Objects.hash(name, description, expression, priority, effectiveFrom, effectiveTo, metadata);
+            return Objects.hash(name, description, expression, onMatchForwardTo, priority, effectiveFrom, effectiveTo, metadata);
         }
         
         @Override
@@ -486,6 +501,7 @@ public class RuleSetDescriptor {
                    "name='" + name + '\'' +
                    ", description='" + description + '\'' +
                    ", expression='" + expression + '\'' +
+                   ", onMatchForwardTo='" + onMatchForwardTo + '\'' +
                    ", priority=" + priority +
                    ", effectiveFrom=" + effectiveFrom +
                    ", effectiveTo=" + effectiveTo +

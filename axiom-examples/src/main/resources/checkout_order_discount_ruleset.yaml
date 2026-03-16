@@ -93,3 +93,9 @@ rules:
     priority: 20
     effectiveFrom: "2023-01-01T00:00:00Z"
 
+  - name: "High Value Loyalty Gate"
+    description: "Forward high-value customers into a child loyalty ruleset"
+    expression: successfulOrders() > 15 and hasLoyaltyMembership("GOLD")
+    onMatchForwardTo: "/checkout_high_value_loyalty_ruleset.yaml"
+    priority: 30
+    effectiveFrom: "2023-01-01T00:00:00Z"

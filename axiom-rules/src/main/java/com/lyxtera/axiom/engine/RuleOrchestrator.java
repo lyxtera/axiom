@@ -3,6 +3,7 @@ package com.lyxtera.axiom.engine;
 import static com.lyxtera.axiom.api.exception.AxiomEngineException.MSG_RULE_EVALUATION_FAILED;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,9 +64,7 @@ public class RuleOrchestrator<K extends Enum<K>> {
      * @return The first matching rule, or empty if no rule matches
      */
     public Optional<BusinessRule<K>> getFirstMatchingRule(RuleContext<K> context) {
-        return ruleSet.getRulesInPriorityOrder().stream()
-            .filter(rule -> evaluateCondition(rule, context))
-            .findFirst();
+        return executeFirst(ruleSet, context).getFirstMatchedRule();
     }
     
     /**
@@ -79,36 +78,17 @@ public class RuleOrchestrator<K extends Enum<K>> {
      */
     public RuleExecutionResult<K> executeAllMatchingRules(RuleContext<K> context) {
         try {
-            List<BusinessRule<K>> matchedRules = new ArrayList<>();
-            Map<BusinessRule<K>, Boolean> executedRules = new LinkedHashMap<>();
-            BusinessRule<K> firstMatchedRule = null;
-            Boolean firstRuleResult = null;
-            
-            for (BusinessRule<K> rule : ruleSet.getRulesInPriorityOrder()) {
-                if (evaluateCondition(rule, context)) {
-                    matchedRules.add(rule);
-                    
-                    // Execute the rule and store the result
-                    boolean result = rule.evaluate(context);
-                    executedRules.put(rule, result);
-                    
-                    // Keep track of the first matched rule and its result
-                    if (firstMatchedRule == null) {
-                        firstMatchedRule = rule;
-                        firstRuleResult = result;
-                    }
-                }
-            }
-            
-            if (matchedRules.isEmpty()) {
+            TraversalResult<K> traversalResult = executeAll(ruleSet, context);
+
+            if (!traversalResult.hasMatches()) {
                 return RuleExecutionResult.empty();
             }
-            
+
             return RuleExecutionResult.multiple(
-                matchedRules,
-                executedRules,
-                firstMatchedRule,
-                firstRuleResult
+                traversalResult.getMatchedRules(),
+                traversalResult.getExecutedRules(),
+                traversalResult.getFirstMatchedRule().orElse(null),
+                traversalResult.getFirstRuleResult().orElse(null)
             );
         } catch (Exception e) {
             return RuleExecutionResult.failure(String.format("Execution failed. %s", e.getMessage()));
@@ -126,15 +106,14 @@ public class RuleOrchestrator<K extends Enum<K>> {
      */
     public RuleExecutionResult<K> executeFirstMatchingRule(RuleContext<K> context) {
         try {
-            Optional<BusinessRule<K>> ruleOpt = getFirstMatchingRule(context);
-            
-            if (ruleOpt.isEmpty()) {
+            TraversalResult<K> traversalResult = executeFirst(ruleSet, context);
+
+            if (!traversalResult.hasMatches()) {
                 return RuleExecutionResult.empty();
             }
-            
-            BusinessRule<K> rule = ruleOpt.get();
-            boolean result = rule.evaluate(context);
-            
+
+            BusinessRule<K> rule = traversalResult.getFirstMatchedRule().orElseThrow();
+            Boolean result = traversalResult.getFirstRuleResult().orElseThrow();
             return RuleExecutionResult.single(rule, result);
         } catch (Exception e) {
             return RuleExecutionResult.failure("Error executing rule: " + e.getMessage());
@@ -311,8 +290,14 @@ public class RuleOrchestrator<K extends Enum<K>> {
                 
                 // Parse the rule expression
                 BusinessRule<K> rule = parser.parseRule(metadata, ruleName, expression);
+                if (rule.getActions().isEmpty()) {
+                    throw new DynamicRuleValidationException(
+                        "Dynamic rules must include a then clause and at least one action: " + expression);
+                }
                 rules.add(rule);
                 
+            } catch (DynamicRuleValidationException e) {
+                throw e;
             } catch (Exception e) {
                 throw DynamicRuleValidationException.ruleParsingFailed(expression, e);
             }
@@ -382,4 +367,122 @@ public class RuleOrchestrator<K extends Enum<K>> {
             throw AxiomEngineException.of(MSG_RULE_EVALUATION_FAILED, rule.getName(), e.getMessage());
         }
     }
-} 
+
+    private TraversalResult<K> executeFirst(RuleSet<K> activeRuleSet, RuleContext<K> context) {
+        for (BusinessRule<K> rule : activeRuleSet.getRulesInPriorityOrder()) {
+            if (!evaluateCondition(rule, context)) {
+                continue;
+            }
+
+            if (rule.isGateRule()) {
+                RuleSet<K> childRuleSet = rule.getChildRuleSet()
+                    .orElseThrow(() -> AxiomEngineException.of("Gate rule '%s' is missing its child ruleset", rule.getName()));
+                TraversalResult<K> childResult = executeFirst(childRuleSet, context);
+                if (childResult.hasMatches()) {
+                    return childResult;
+                }
+                continue;
+            }
+
+            boolean result = rule.evaluate(context);
+            return TraversalResult.single(rule, result);
+        }
+
+        return TraversalResult.empty();
+    }
+
+    private TraversalResult<K> executeAll(RuleSet<K> activeRuleSet, RuleContext<K> context) {
+        TraversalResult<K> result = TraversalResult.empty();
+
+        for (BusinessRule<K> rule : activeRuleSet.getRulesInPriorityOrder()) {
+            if (!evaluateCondition(rule, context)) {
+                continue;
+            }
+
+            if (rule.isGateRule()) {
+                RuleSet<K> childRuleSet = rule.getChildRuleSet()
+                    .orElseThrow(() -> AxiomEngineException.of("Gate rule '%s' is missing its child ruleset", rule.getName()));
+                result = result.merge(executeAll(childRuleSet, context));
+                continue;
+            }
+
+            boolean executed = rule.evaluate(context);
+            result = result.merge(TraversalResult.single(rule, executed));
+        }
+
+        return result;
+    }
+
+    private static final class TraversalResult<K extends Enum<K>> {
+        private final List<BusinessRule<K>> matchedRules;
+        private final Map<BusinessRule<K>, Boolean> executedRules;
+        private final BusinessRule<K> firstMatchedRule;
+        private final Boolean firstRuleResult;
+
+        private TraversalResult(
+                List<BusinessRule<K>> matchedRules,
+                Map<BusinessRule<K>, Boolean> executedRules,
+                BusinessRule<K> firstMatchedRule,
+                Boolean firstRuleResult) {
+            this.matchedRules = matchedRules;
+            this.executedRules = executedRules;
+            this.firstMatchedRule = firstMatchedRule;
+            this.firstRuleResult = firstRuleResult;
+        }
+
+        static <K extends Enum<K>> TraversalResult<K> empty() {
+            return new TraversalResult<>(Collections.emptyList(), Collections.emptyMap(), null, null);
+        }
+
+        static <K extends Enum<K>> TraversalResult<K> single(BusinessRule<K> rule, boolean executed) {
+            List<BusinessRule<K>> matchedRules = new ArrayList<>();
+            matchedRules.add(rule);
+
+            Map<BusinessRule<K>, Boolean> executedRules = new LinkedHashMap<>();
+            executedRules.put(rule, executed);
+
+            return new TraversalResult<>(matchedRules, executedRules, rule, executed);
+        }
+
+        TraversalResult<K> merge(TraversalResult<K> other) {
+            if (!other.hasMatches()) {
+                return this;
+            }
+            if (!hasMatches()) {
+                return other;
+            }
+
+            List<BusinessRule<K>> mergedMatchedRules = new ArrayList<>(matchedRules);
+            mergedMatchedRules.addAll(other.matchedRules);
+
+            Map<BusinessRule<K>, Boolean> mergedExecutedRules = new LinkedHashMap<>(executedRules);
+            mergedExecutedRules.putAll(other.executedRules);
+
+            return new TraversalResult<>(
+                mergedMatchedRules,
+                mergedExecutedRules,
+                firstMatchedRule,
+                firstRuleResult);
+        }
+
+        boolean hasMatches() {
+            return !matchedRules.isEmpty();
+        }
+
+        List<BusinessRule<K>> getMatchedRules() {
+            return matchedRules;
+        }
+
+        Map<BusinessRule<K>, Boolean> getExecutedRules() {
+            return executedRules;
+        }
+
+        Optional<BusinessRule<K>> getFirstMatchedRule() {
+            return Optional.ofNullable(firstMatchedRule);
+        }
+
+        Optional<Boolean> getFirstRuleResult() {
+            return Optional.ofNullable(firstRuleResult);
+        }
+    }
+}

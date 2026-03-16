@@ -89,6 +89,8 @@ RuleSet<MyContextKey> ruleSet = loader.loadRuleSet();
 
 The `YamlRuleSetLoader` is the standard implementation, but you can create custom loaders for other sources like databases, remote APIs, or other file formats by implementing the `RuleSetLoader` interface.
 
+When a rule uses `onMatchForwardTo`, the loader resolves that child ruleset during initialization, validates it like any other ruleset, and rejects cyclic forwarding chains.
+
 ## Rule Set YAML Format
 
 Rule Sets are typically defined in YAML files, which provide a human-readable format for expressing rules. Here's an example of a complete ruleset YAML file:
@@ -142,6 +144,11 @@ The YAML file consists of:
 2. **Business Checks**: Definitions of the checks that can be used in rule expressions
 3. **Business Actions**: Definitions of the actions that can be performed when rules match
 4. **Rules**: Definitions of the actual business rules, including their expressions, priorities, and effective dates
+
+Rules can be mixed within the same flat `rules` list:
+
+- Action rule: `expression` contains `then` and executes actions directly
+- Gate rule: `expression` is condition-only and forwards into a child ruleset through `onMatchForwardTo`
 
 ## Rule Set Metadata
 

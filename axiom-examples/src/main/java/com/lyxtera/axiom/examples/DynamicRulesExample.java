@@ -43,6 +43,7 @@ public class DynamicRulesExample {
             
             System.out.println("✓ Ruleset loaded successfully");
             System.out.println("✓ Dynamic execution enabled: " + true); // ruleSet.getMetadata().isAllowDynamicExecution()
+            System.out.println("✓ Static rules may also include gate rules via onMatchForwardTo");
             
             // 2. Demonstrate dynamic rule execution scenarios
             demonstrateValidDynamicRules();

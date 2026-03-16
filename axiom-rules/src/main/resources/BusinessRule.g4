@@ -2,7 +2,7 @@ grammar BusinessRule;
 
 // Parser Rules
 businessRule
-    : expression 'then' outcome EOF
+    : expression ('then' outcome)? EOF
     ;
 
 expression

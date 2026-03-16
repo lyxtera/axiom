@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.lyxtera.axiom.api.exception.RuleException;
@@ -217,10 +218,28 @@ public class RuleSet<K extends Enum<K>> {
             throw RuleException.of("Rule '%s' must have a condition", rule.getName());
         }
 
-        // Validate rule actions
-        if (rule.getActions() == null || rule.getActions().isEmpty()) {
-            throw RuleException.of("Rule '%s' must have at least one action", rule.getName());
+        if (rule.isGateRule()) {
+            String forwardRef = rule.getOnMatchForwardTo().orElse("").trim();
+
+            if (forwardRef.isEmpty()) {
+                throw RuleException.of("Gate rule '%s' must define a non-empty onMatchForwardTo reference", rule.getName());
+            }
+            if (!rule.getActions().isEmpty()) {
+                throw RuleException.of("Rule '%s' cannot define both actions and onMatchForwardTo", rule.getName());
+            }
+            if (rule.getChildRuleSet().isEmpty()) {
+                throw RuleException.of("Gate rule '%s' must have a loaded child ruleset", rule.getName());
+            }
+            return;
         }
+
+        if (!rule.getActions().isEmpty()) {
+            rule.getActions().forEach(action ->
+                Objects.requireNonNull(action, () -> "Rule '" + rule.getName() + "' contains a null action"));
+            return;
+        }
+
+        throw RuleException.of("Rule '%s' must have at least one action", rule.getName());
     }
 
     /**

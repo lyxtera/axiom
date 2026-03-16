@@ -64,7 +64,9 @@
 </ul>
 <div class="section-heading">Integration & Frameworks</div>
 <ul>
-<li><a href="#rule-orchestrator-injection">Spring Boot Integration</a></li>
+<li class="subcategory">Spring Boot Integration (covered in rule-orchestrator-injection.md)</li>
+<ul class="subcategory-list">
+</ul>
 </ul>
 <div class="section-heading">Testing & Best Practices</div>
 <ul>
@@ -108,16 +110,15 @@
 } else if (order.isInternational()) {
     // handle customs
 } else if (order.hasGiftWrap()) {
-    // ...
+    // add gift wrap processing
 }
-## Key Benefits
-
-### Separation of Concerns
-
-Business rules are maintained separately from application code, allowing business analysts and developers to work collaboratively. Rules are stored in YAML files that can be managed independently of the application code.
-
-```yaml
-rules:
+</code></pre>
+<p>With Axiom, you extract these conditions into reusable business checks and actions, making your code more maintainable and testable.</p>
+<hr />
+<h2>Key Benefits</h2>
+<h3>Separation of Concerns</h3>
+<p>Business rules are maintained separately from application code, allowing business analysts and developers to work collaboratively. Rules are stored in YAML files that can be managed independently of the application code.</p>
+<pre><code class="language-yaml">rules:
   - name: &quot;High Risk Score Rule&quot;
     description: &quot;Block requests with very high risk scores&quot;
     expression: hasRiskScore(90) then blockRequest()
@@ -224,6 +225,13 @@ RuleExecutionResult&lt;ContextKey&gt; result = orchestrator.executeFirstMatching
     &lt;version&gt;1.0.1&lt;/version&gt;
 &lt;/dependency&gt;
 
+&lt;!-- For Spring Boot integration (optional) --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;com.lyxtera&lt;/groupId&gt;
+    &lt;artifactId&gt;axiom-spring-boot-starter&lt;/artifactId&gt;
+    &lt;version&gt;1.0.1&lt;/version&gt;
+&lt;/dependency&gt;
+
 &lt;!-- Guice for dependency injection --&gt;
 &lt;dependency&gt;
     &lt;groupId&gt;com.google.inject&lt;/groupId&gt;
@@ -235,6 +243,8 @@ RuleExecutionResult&lt;ContextKey&gt; result = orchestrator.executeFirstMatching
 <p>Add the Axiom dependency to your <code>build.gradle</code>:</p>
 <pre><code class="language-groovy">dependencies {
     implementation 'com.lyxtera:axiom-rules:1.0.1'
+    // For Spring Boot integration (optional)
+    implementation 'com.lyxtera:axiom-spring-boot-starter:1.0.1'
     implementation 'com.google.inject:guice:5.1.0'
 }
 </code></pre>
@@ -649,6 +659,7 @@ RuleSetLoader&lt;MyContextKey&gt; loader =
 RuleSet&lt;MyContextKey&gt; ruleSet = loader.loadRuleSet();
 </code></pre>
 <p>The <code>YamlRuleSetLoader</code> is the standard implementation, but you can create custom loaders for other sources like databases, remote APIs, or other file formats by implementing the <code>RuleSetLoader</code> interface.</p>
+<p>When a rule uses <code>onMatchForwardTo</code>, the loader resolves that child ruleset during initialization, validates it like any other ruleset, and rejects cyclic forwarding chains.</p>
 <h2>Rule Set YAML Format</h2>
 <p>Rule Sets are typically defined in YAML files, which provide a human-readable format for expressing rules. Here's an example of a complete ruleset YAML file:</p>
 <pre><code class="language-yaml">rulesetName: &quot;Fraud Detection Ruleset&quot;
@@ -699,6 +710,11 @@ rules:
 <li><strong>Business Actions</strong>: Definitions of the actions that can be performed when rules match</li>
 <li><strong>Rules</strong>: Definitions of the actual business rules, including their expressions, priorities, and effective dates</li>
 </ol>
+<p>Rules can be mixed within the same flat <code>rules</code> list:</p>
+<ul>
+<li>Action rule: <code>expression</code> contains <code>then</code> and executes actions directly</li>
+<li>Gate rule: <code>expression</code> is condition-only and forwards into a child ruleset through <code>onMatchForwardTo</code></li>
+</ul>
 <h2>Rule Set Metadata</h2>
 <p>Rule Sets contain metadata that describes the contents of the rule set, including the business checks, business actions, and rules. This metadata is useful for documentation, validation, and introspection.</p>
 <pre><code class="language-java">// Access the metadata of a rule set
@@ -809,7 +825,8 @@ rules:
 
   - name: &quot;Rule Two&quot;
     description: &quot;Description of the second rule&quot;
-    expression: checkTwo(500) then actionTwo(&quot;reason&quot;, &quot;HIGH&quot;)
+    expression: checkTwo(500)
+    onMatchForwardTo: &quot;/rules/high-priority-follow-up.yaml&quot;
     priority: 20
     effectiveFrom: &quot;2023-02-01T00:00:00Z&quot;
 </code></pre>
@@ -913,7 +930,12 @@ rules:
 <tr>
 <td><code>expression</code></td>
 <td>Required</td>
-<td>The rule expression that defines the check and action parts. More details below.</td>
+<td>The rule expression that defines either an action rule (<code>condition then action</code>) or a gate rule (<code>condition</code>). More details below.</td>
+</tr>
+<tr>
+<td><code>onMatchForwardTo</code></td>
+<td>Required for gate rules</td>
+<td>A child ruleset path/reference. Must be absent on action rules.</td>
 </tr>
 <tr>
 <td><code>priority</code></td>
@@ -938,16 +960,25 @@ rules:
 </tbody>
 </table>
 <h2>Rule Expressions</h2>
-<p>Rule expressions follow a specific syntax:</p>
+<p>Rule expressions follow one of two valid forms:</p>
 <pre><code>check_condition(parameters) then action(parameters)
+check_condition(parameters)
 </code></pre>
-<p>The expression consists of two parts:
+<p>Action rules consist of two parts:
 1. <strong>Check condition</strong>: Evaluates to true or false, determining if the rule matches
 2. <strong>Action</strong>: The action to perform when the check condition is true</p>
+<p>Gate rules only define the condition in <code>expression</code> and must add <code>onMatchForwardTo</code>. When the condition matches, the orchestrator evaluates the referenced child ruleset using the same context and mode.</p>
 <p>Multiple check conditions can be combined using logical operators:</p>
 <pre><code>checkOne(param1) AND checkTwo(param2) then actionOne(100)
 checkOne(param1) OR checkTwo(param2) then actionOne(100)
 NOT checkOne(param1) then actionTwo(&quot;reason&quot;)
+</code></pre>
+<p>Gate rule example:</p>
+<pre><code class="language-yaml">- name: &quot;Loyalty Gate&quot;
+  description: &quot;Forward loyalty customers to a child ruleset&quot;
+  expression: checkOne(param1) and checkTwo(param2)
+  onMatchForwardTo: &quot;/rules/loyalty-follow-up.yaml&quot;
+  priority: 15
 </code></pre>
 <h2>Minimal Valid Rule Set Example</h2>
 <p>Here's an example of a minimal valid rule set:</p>
@@ -966,6 +997,12 @@ rules:
     description: &quot;A simple rule that always triggers&quot;
     expression: isTrue() then doNothing()
     priority: 10
+
+  - name: &quot;Simple Gate&quot;
+    description: &quot;A gate rule that forwards into a child ruleset&quot;
+    expression: isTrue()
+    onMatchForwardTo: &quot;/rules/child_rules.yaml&quot;
+    priority: 20
 </code></pre>
 <h2>Best Practices for Rule Set Structure</h2>
 <ol>
@@ -1013,8 +1050,10 @@ rules:
 <p><strong>Case Sensitivity</strong>: All names (checks, actions, parameters) are case-sensitive and must match exactly between YAML and Java implementations.</p>
 </li>
 <li>
-<p><strong>Expression Syntax</strong>: Rule expressions must follow the exact syntax, including spaces between operators. The validation will catch syntax errors, but they can be tricky to spot manually.</p>
+<p><strong>Rule Type Mixing</strong>: A single rule cannot both execute actions and forward to a child ruleset. Use either <code>then</code> or <code>onMatchForwardTo</code>, never both.</p>
 </li>
+<li><strong>Forward References</strong>: Gate rules must use a non-blank <code>onMatchForwardTo</code>, and cycles such as <code>A -&gt; B -&gt; A</code> are rejected at load time.</li>
+<li><strong>Expression Syntax</strong>: Rule expressions must follow the exact syntax, including spaces between operators. The validation will catch syntax errors, but they can be tricky to spot manually.</li>
 </ul></section>
 <section id="code-generation" class="content-section">
 <h1>Code Generation</h1>
@@ -5249,6 +5288,9 @@ executor.shutdown();
 </section>
 <section id="Integration & Frameworks" class="category-section">
 <h2>Integration & Frameworks</h2>
+<section id="Spring Boot Integration (covered in rule-orchestrator-injection.md)" class="subcategory-section">
+<h3>Spring Boot Integration (covered in rule-orchestrator-injection.md)</h3>
+</section>
 </section>
 <section id="Testing & Best Practices" class="category-section">
 <h2>Testing & Best Practices</h2>

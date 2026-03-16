@@ -8,7 +8,6 @@ import static org.mockito.Mockito.when;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -83,6 +82,19 @@ class DefaultParserTest {
             // then
             assertThat(rule).isNotNull();
             assertThat(rule.getName()).isEqualTo("test-rule");
+        }
+
+        @Test
+        @DisplayName("should parse gate condition without then clause")
+        void shouldParseGateConditionWithoutThenClause() {
+            BusinessCheck<TestKey> isPremiumCheck = mock(BusinessCheck.class);
+            when(isPremiumCheck.execute(any())).thenReturn(new Value("true", Value.Type.BOOLEAN));
+            businessChecks.put("isPremium", isPremiumCheck);
+
+            BusinessRule<TestKey> rule = parser.parseRule(metadata, "test-rule", "isPremium()");
+
+            assertThat(rule).isNotNull();
+            assertThat(rule.getActions()).isEmpty();
         }
 
         @Test

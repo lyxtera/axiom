@@ -1,0 +1,24 @@
+rulesetName: "Parent Gate Ruleset"
+rulesetDescription: "Parent ruleset with a forwarding gate"
+
+businessChecks:
+  - name: alwaysTrue
+    description: Always returns true
+  - name: alwaysFalse
+    description: Always returns false
+
+businessActions:
+  - name: doAction
+    description: Executes an action
+
+rules:
+  - name: "Child Gate"
+    expression: alwaysTrue()
+    onMatchForwardTo: "/gate_child_ruleset.yaml"
+    priority: 10
+    effectiveFrom: "2023-01-01T00:00:00Z"
+
+  - name: "Fallback Action"
+    expression: alwaysTrue() then doAction()
+    priority: 20
+    effectiveFrom: "2023-01-01T00:00:00Z"

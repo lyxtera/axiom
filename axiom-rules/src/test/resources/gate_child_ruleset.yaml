@@ -1,0 +1,16 @@
+rulesetName: "Child Gate Ruleset"
+rulesetDescription: "Child ruleset loaded by a gate"
+
+businessChecks:
+  - name: alwaysTrue
+    description: Always returns true
+
+businessActions:
+  - name: doAction
+    description: Executes an action
+
+rules:
+  - name: "Child Action"
+    expression: alwaysTrue() then doAction()
+    priority: 10
+    effectiveFrom: "2023-01-01T00:00:00Z"

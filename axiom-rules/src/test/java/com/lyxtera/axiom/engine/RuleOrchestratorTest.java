@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.any;
 
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -246,6 +247,65 @@ class RuleOrchestratorTest {
         assertThat(result.getFailureReason()).isPresent();
         assertThat(result.getFailureReason().get()).contains("Execution failed");
     }
+
+    @Test
+    void testExecuteFirstMatchingRule_WithMatchingGateReturnsChildActionRule() {
+        RuleSet<TestKey> parentRuleSet = new RuleSet<>();
+        RuleSet<TestKey> childRuleSet = new RuleSet<>();
+
+        BusinessRule<TestKey> gateRule = createGateRule("GateRule", ctx -> true, childRuleSet, "/child.yaml");
+        BusinessRule<TestKey> childActionRule = createConcreteRule("ChildActionRule", ctx -> true);
+
+        childRuleSet.addRule(childActionRule, 10, ZonedDateTime.now());
+        parentRuleSet.addRule(gateRule, 10, ZonedDateTime.now());
+
+        RuleOrchestrator<TestKey> orchestrator = new RuleOrchestrator<>(parentRuleSet);
+        RuleExecutionResult<TestKey> result = orchestrator.executeFirstMatchingRule(context);
+
+        assertThat(result.hasMatches()).isTrue();
+        assertThat(result.getFirstMatchedRule()).hasValue(childActionRule);
+    }
+
+    @Test
+    void testExecuteFirstMatchingRule_WithGateNoChildMatchContinuesToSiblingRule() {
+        RuleSet<TestKey> parentRuleSet = new RuleSet<>();
+        RuleSet<TestKey> childRuleSet = new RuleSet<>();
+
+        BusinessRule<TestKey> gateRule = createGateRule("GateRule", ctx -> true, childRuleSet, "/child.yaml");
+        BusinessRule<TestKey> childMissRule = createConcreteRule("ChildMissRule", ctx -> false);
+        BusinessRule<TestKey> siblingRule = createConcreteRule("SiblingRule", ctx -> true);
+
+        childRuleSet.addRule(childMissRule, 10, ZonedDateTime.now());
+        parentRuleSet.addRule(gateRule, 10, ZonedDateTime.now());
+        parentRuleSet.addRule(siblingRule, 20, ZonedDateTime.now());
+
+        RuleOrchestrator<TestKey> orchestrator = new RuleOrchestrator<>(parentRuleSet);
+        RuleExecutionResult<TestKey> result = orchestrator.executeFirstMatchingRule(context);
+
+        assertThat(result.hasMatches()).isTrue();
+        assertThat(result.getFirstMatchedRule()).hasValue(siblingRule);
+    }
+
+    @Test
+    void testExecuteAllMatchingRules_WithMatchingGateMergesChildActions() {
+        RuleSet<TestKey> parentRuleSet = new RuleSet<>();
+        RuleSet<TestKey> childRuleSet = new RuleSet<>();
+
+        BusinessRule<TestKey> parentActionRule = createConcreteRule("ParentActionRule", ctx -> true);
+        BusinessRule<TestKey> gateRule = createGateRule("GateRule", ctx -> true, childRuleSet, "/child.yaml");
+        BusinessRule<TestKey> childActionRule = createConcreteRule("ChildActionRule", ctx -> true);
+
+        childRuleSet.addRule(childActionRule, 10, ZonedDateTime.now());
+        parentRuleSet.addRule(parentActionRule, 10, ZonedDateTime.now());
+        parentRuleSet.addRule(gateRule, 20, ZonedDateTime.now());
+
+        RuleOrchestrator<TestKey> orchestrator = new RuleOrchestrator<>(parentRuleSet);
+        RuleExecutionResult<TestKey> result = orchestrator.executeAllMatchingRules(context);
+
+        assertThat(result.hasMatches()).isTrue();
+        assertThat(result.getMatchedRules()).containsExactly(parentActionRule, childActionRule);
+        assertThat(result.getExecutedRules()).containsKeys(parentActionRule, childActionRule);
+    }
     
     // Helper method to create a mock rule
     private BusinessRule<TestKey> createMockRule(String name, Expression<TestKey> condition) {
@@ -253,6 +313,8 @@ class RuleOrchestratorTest {
         BusinessRule<TestKey> rule = mock(BusinessRule.class);
         when(rule.getName()).thenReturn(name);
         when(rule.getCondition()).thenReturn(Condition.asBoolean(condition));
+        when(rule.isGateRule()).thenReturn(false);
+        when(rule.isActionRule()).thenReturn(true);
         
         // Create a mock action
         @SuppressWarnings("unchecked")
@@ -267,4 +329,22 @@ class RuleOrchestratorTest {
         
         return rule;
     }
-} 
+
+    private BusinessRule<TestKey> createConcreteRule(String name, Expression<TestKey> condition) {
+        @SuppressWarnings("unchecked")
+        RuleFunction<TestKey> action = mock(RuleFunction.class);
+        List<RuleFunction<TestKey>> actions = new ArrayList<>();
+        actions.add(action);
+        return new BusinessRule<>(name, Condition.asBoolean(condition), actions);
+    }
+
+    private BusinessRule<TestKey> createGateRule(
+            String name,
+            Expression<TestKey> condition,
+            RuleSet<TestKey> childRuleSet,
+            String forwardRef) {
+        BusinessRule<TestKey> gateRule = new BusinessRule<>(name, Condition.asBoolean(condition), Collections.emptyList(), forwardRef);
+        gateRule.setChildRuleSet(childRuleSet);
+        return gateRule;
+    }
+}

@@ -42,7 +42,8 @@ rules:
     
   - name: "Rule Two"
     description: "Description of the second rule"
-    expression: checkTwo(500) then actionTwo("reason", "HIGH")
+    expression: checkTwo(500)
+    onMatchForwardTo: "/rules/high-priority-follow-up.yaml"
     priority: 20
     effectiveFrom: "2023-02-01T00:00:00Z"
 ```
@@ -78,7 +79,8 @@ rules:
 |-------|----------|-------------|
 | `name` | Required | A descriptive name for the rule. Should be unique within the rule set. |
 | `description` | Required | A detailed description of the rule's purpose and conditions. |
-| `expression` | Required | The rule expression that defines the check and action parts. More details below. |
+| `expression` | Required | The rule expression that defines either an action rule (`condition then action`) or a gate rule (`condition`). More details below. |
+| `onMatchForwardTo` | Required for gate rules | A child ruleset path/reference. Must be absent on action rules. |
 | `priority` | Required | A numeric value determining the rule's execution priority. Lower numbers indicate higher priority. |
 | `effectiveFrom` | Optional | The ISO-8601 date-time from which the rule becomes active. If omitted, the rule is active immediately. |
 | `effectiveTo` | Optional | The ISO-8601 date-time after which the rule becomes inactive. If omitted, the rule never expires. |
@@ -86,15 +88,18 @@ rules:
 
 ## Rule Expressions
 
-Rule expressions follow a specific syntax:
+Rule expressions follow one of two valid forms:
 
 ```
 check_condition(parameters) then action(parameters)
+check_condition(parameters)
 ```
 
-The expression consists of two parts:
+Action rules consist of two parts:
 1. **Check condition**: Evaluates to true or false, determining if the rule matches
 2. **Action**: The action to perform when the check condition is true
+
+Gate rules only define the condition in `expression` and must add `onMatchForwardTo`. When the condition matches, the orchestrator evaluates the referenced child ruleset using the same context and mode.
 
 Multiple check conditions can be combined using logical operators:
 
@@ -102,6 +107,22 @@ Multiple check conditions can be combined using logical operators:
 checkOne(param1) AND checkTwo(param2) then actionOne(100)
 checkOne(param1) OR checkTwo(param2) then actionOne(100)
 NOT checkOne(param1) then actionTwo("reason")
+```
+
+Gate rule example:
+
+```yaml
+- name: "Enterprise Membership"
+  description: "Forward enterprise loyalty customers to a child ruleset"
+  expression: checkOne(param1) and checkTwo(param2)
+  onMatchForwardTo: "/rules/enterprise-loyalty-rules.yaml"
+  priority: 15
+
+- name: "Regular Membership"
+  description: "Forward regular loyalty customers to a child ruleset"
+  expression: checkOne(param1) and checkTwo(param2)
+  onMatchForwardTo: "/rules/regular-membership-rules.yaml"
+  priority: 20
 ```
 
 ## Minimal Valid Rule Set Example
@@ -124,6 +145,12 @@ rules:
     description: "A simple rule that always triggers"
     expression: isTrue() then doNothing()
     priority: 10
+
+  - name: "Simple Gate"
+    description: "A gate rule that forwards into a child ruleset"
+    expression: isTrue()
+    onMatchForwardTo: "/rules/child_rules.yaml"
+    priority: 20
 ```
 
 ## Best Practices for Rule Set Structure
@@ -156,6 +183,8 @@ rules:
 
 - **Case Sensitivity**: All names (checks, actions, parameters) are case-sensitive and must match exactly between YAML and Java implementations.
 
+- **Rule Type Mixing**: A single rule cannot both execute actions and forward to a child ruleset. Use either `then` or `onMatchForwardTo`, never both.
+- **Forward References**: Gate rules must use a non-blank `onMatchForwardTo`, and cycles such as `A -> B -> A` are rejected at load time.
 - **Expression Syntax**: Rule expressions must follow the exact syntax, including spaces between operators. The validation will catch syntax errors, but they can be tricky to spot manually.
 
 [← Back to Rule Sets Overview](ruleset-overview.md)

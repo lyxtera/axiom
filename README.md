@@ -102,6 +102,12 @@ rules:
     description: "Apply 5% discount for orders over $1000"
     expression: isHighValueOrder(1000) then applyDiscount(5)
     priority: 20
+
+  - name: "Enterprise Order Gate"
+    description: "Forward enterprise customers into a dedicated child ruleset"
+    expression: isPremiumCustomer()
+    onMatchForwardTo: "/enterprise_order_rules.yaml"
+    priority: 30
 ```
 
 3. **Run code generation:**
@@ -196,6 +202,13 @@ expression: orderAmount() > 1000 then applyShipping()
 expression: (isPremiumCustomer() or isHighValueOrder(500)) and not hasExistingDiscount() then applyDiscount(15)
 ```
 
+Gate rules reuse the same expression syntax, but omit the `then` clause and add `onMatchForwardTo`:
+
+```yaml
+expression: isPremiumCustomer()
+onMatchForwardTo: "/enterprise_order_rules.yaml"
+```
+
 ### Rule Set Structure
 
 ```yaml
@@ -225,10 +238,16 @@ rules:
   - name: "Rule Name"
     description: "What this rule does"
     expression: condition then action
+    onMatchForwardTo: "/child_rules.yaml"  # Required for gate rules, omitted for action rules
     priority: 10              # Lower numbers execute first
     effectiveFrom: "2023-01-01T00:00:00Z"  # Optional
     effectiveTo: "2024-01-01T00:00:00Z"    # Optional
 ```
+
+Each rule must be exactly one of:
+
+- Action rule: `expression` contains `then`, `onMatchForwardTo` is absent
+- Gate rule: `expression` contains no `then`, `onMatchForwardTo` points to a child ruleset
 
 ### Code Generation Plugin
 
@@ -423,4 +442,3 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 - 🔄 Spring Boot starter
 - 🔧 Admin dashboard
 - 📈 Metrics integration
-
