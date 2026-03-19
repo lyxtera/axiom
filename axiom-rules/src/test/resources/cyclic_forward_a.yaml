@@ -1,0 +1,17 @@
+rulesetName: "Cycle A"
+rulesetDescription: "Cycle A"
+
+businessChecks:
+  - name: alwaysTrue
+    description: Always returns true
+
+businessActions:
+  - name: doAction
+    description: Executes an action
+
+rules:
+  - name: "Forward To B"
+    expression: alwaysTrue()
+    onMatchForwardTo: "/cyclic_forward_b.yaml"
+    priority: 10
+    effectiveFrom: "2023-01-01T00:00:00Z"

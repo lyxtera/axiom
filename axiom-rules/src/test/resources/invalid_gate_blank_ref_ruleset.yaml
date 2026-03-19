@@ -1,0 +1,17 @@
+rulesetName: "Invalid Blank Ref Ruleset"
+rulesetDescription: "Invalid because the gate uses a blank forwarding ref"
+
+businessChecks:
+  - name: alwaysTrue
+    description: Always returns true
+
+businessActions:
+  - name: doAction
+    description: Executes an action
+
+rules:
+  - name: "Invalid Blank Ref Rule"
+    expression: alwaysTrue()
+    onMatchForwardTo: "   "
+    priority: 10
+    effectiveFrom: "2023-01-01T00:00:00Z"

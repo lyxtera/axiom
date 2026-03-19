@@ -1,0 +1,101 @@
+rulesetName: "Checkout Discount Ruleset"
+rulesetDescription: "Metadata for dynamically applying discounts to customer orders"
+
+# Enable dynamic rule execution for this ruleset
+allowDynamicExecution: true
+
+businessChecks:
+  - name: successfulOrders
+    description: "Determines how many successful orders a given customer already had"
+    params:
+      - customerId
+  - name: orderValue
+    description: "Gets the current order value"
+  - name: isFirstTimeCustomer
+    description: "Checks if this is the customer's first order"
+  - name: hasLoyaltyMembership
+    description: "Checks if customer has active loyalty membership"
+    params:
+      - membershipLevel
+
+businessActions:
+  - name: applyDiscount
+    description: "Applies a discount to the customer's order"
+    params:
+      - percentage
+  - name: updateNote
+    description: "Updates the order note with the provided text"
+    params:
+      - noteText
+  - name: updateTotalAmount
+    description: "Updates the order total amount with the provided value"
+    params:
+      - amount
+  - name: addLoyaltyPoints
+    description: "Adds loyalty points to customer account"
+    params:
+      - points
+  - name: sendNotification
+    description: "Sends a notification to the customer"
+    params:
+      - message
+
+# Entity permissions for dynamic rule execution
+entityPermissions:
+  - name: checkoutService
+    allowedFunctions:
+      - successfulOrders
+      - updateNote
+      - applyDiscount
+      - orderValue
+      - isFirstTimeCustomer
+      - hasLoyaltyMembership
+      - addLoyaltyPoints
+      - sendNotification
+    deniedFunctions:
+      - updateTotalAmount
+
+  - name: orderService
+    allowedFunctions:
+      - successfulOrders
+      - orderValue
+      - updateNote
+    deniedFunctions:
+      - applyDiscount
+      - updateTotalAmount
+      - addLoyaltyPoints
+      - sendNotification
+
+  - name: adminService
+    allowedFunctions:
+      - successfulOrders
+      - updateNote
+      - applyDiscount
+      - orderValue
+      - isFirstTimeCustomer
+      - hasLoyaltyMembership
+      - addLoyaltyPoints
+      - sendNotification
+      - updateTotalAmount
+    deniedFunctions: []
+
+# Static rules (traditional rules defined in YAML)
+rules:
+  - name: "VIP Customer Static Rule"
+    description: "Static rule for VIP customers"
+    expression: successfulOrders() > 50 then applyDiscount(15), updateNote("VIP Customer")
+    priority: 10
+    effectiveFrom: "2023-01-01T00:00:00Z"
+
+  - name: "New Customer Welcome"
+    description: "Welcome discount for new customers"
+    expression: isFirstTimeCustomer() then applyDiscount(5), updateNote("Welcome!")
+    priority: 20
+    effectiveFrom: "2023-01-01T00:00:00Z"
+
+  - name: "High Value Loyalty Gate"
+    description: "Forward high-value customers into a child loyalty ruleset"
+    expression: successfulOrders() > 15 and hasLoyaltyMembership("GOLD")
+    onMatchForwardTo: "/checkout_high_value_loyalty_ruleset.yaml"
+    priority: 30
+    effectiveFrom: "2023-01-01T00:00:00Z"

@@ -1,0 +1,16 @@
+rulesetName: "Invalid Missing Ref Ruleset"
+rulesetDescription: "Invalid because the gate omits its forwarding ref"
+
+businessChecks:
+  - name: alwaysTrue
+    description: Always returns true
+
+businessActions:
+  - name: doAction
+    description: Executes an action
+
+rules:
+  - name: "Invalid Missing Ref Rule"
+    expression: alwaysTrue()
+    priority: 10
+    effectiveFrom: "2023-01-01T00:00:00Z"

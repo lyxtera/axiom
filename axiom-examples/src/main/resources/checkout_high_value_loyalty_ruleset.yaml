@@ -1,0 +1,33 @@
+rulesetName: "Checkout High Value Loyalty Ruleset"
+rulesetDescription: "Child ruleset for loyalty-based checkout follow-up actions"
+
+businessChecks:
+  - name: successfulOrders
+    description: "Determines how many successful orders a given customer already had"
+    params:
+      - customerId
+  - name: hasLoyaltyMembership
+    description: "Checks if customer has active loyalty membership"
+    params:
+      - membershipLevel
+
+businessActions:
+  - name: applyDiscount
+    description: "Applies a discount to the customer's order"
+    params:
+      - percentage
+  - name: addLoyaltyPoints
+    description: "Adds loyalty points to customer account"
+    params:
+      - points
+  - name: sendNotification
+    description: "Sends a notification to the customer"
+    params:
+      - message
+
+rules:
+  - name: "Gold Loyalty Follow-Up"
+    description: "Applies a loyalty follow-up for high-value gold members"
+    expression: successfulOrders() > 30 then applyDiscount(3), addLoyaltyPoints(150), sendNotification("Loyalty bonus applied")
+    priority: 10
+    effectiveFrom: "2023-01-01T00:00:00Z"

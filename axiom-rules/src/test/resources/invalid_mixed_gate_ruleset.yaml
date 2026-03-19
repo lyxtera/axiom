@@ -1,0 +1,17 @@
+rulesetName: "Invalid Mixed Gate Ruleset"
+rulesetDescription: "Invalid because the rule mixes action execution and forwarding"
+
+businessChecks:
+  - name: alwaysTrue
+    description: Always returns true
+
+businessActions:
+  - name: doAction
+    description: Executes an action
+
+rules:
+  - name: "Invalid Mixed Rule"
+    expression: alwaysTrue() then doAction()
+    onMatchForwardTo: "/gate_child_ruleset.yaml"
+    priority: 10
+    effectiveFrom: "2023-01-01T00:00:00Z"

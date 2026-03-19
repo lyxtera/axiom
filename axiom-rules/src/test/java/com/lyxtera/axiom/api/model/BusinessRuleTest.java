@@ -1,7 +1,6 @@
 package com.lyxtera.axiom.api.model;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -17,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import com.lyxtera.axiom.engine.RuleContext;
+import com.lyxtera.axiom.engine.RuleSet;
 
 /**
  * Test class for {@link BusinessRule}.
@@ -128,4 +128,16 @@ class BusinessRuleTest {
         // Verify that the rule evaluates to true
         assertThat(result).isTrue();
     }
-} 
+
+    @Test
+    void testGateRuleMetadata() {
+        BusinessRule<TestKey> rule = new BusinessRule<>("gate-rule", condition, Collections.emptyList(), "/child.yaml");
+        RuleSet<TestKey> childRuleSet = new RuleSet<>();
+        rule.setChildRuleSet(childRuleSet);
+
+        assertThat(rule.isGateRule()).isTrue();
+        assertThat(rule.isActionRule()).isFalse();
+        assertThat(rule.getOnMatchForwardTo()).hasValue("/child.yaml");
+        assertThat(rule.getChildRuleSet()).hasValue(childRuleSet);
+    }
+}
