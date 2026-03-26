@@ -31,6 +31,7 @@ public class RuleStubGenerator {
     private final List<String> ruleSetPaths;
     private final boolean overwriteExisting;
     private final String contextKeyEnum;
+    private final boolean failBuildOnDivergedMetadata;
     
     // Template file paths
     private static final String CHECK_TEMPLATE_PATH = "codegen/check_template.tpl";
@@ -44,23 +45,34 @@ public class RuleStubGenerator {
      * @param ruleSetPaths     List of paths to rule set YAML files
      * @param overwriteExisting Whether to overwrite existing files (default: false)
      * @param contextKeyEnum   The fully qualified name of the context enum class (e.g., "com.company.ContextKey")
+     * @param failBuildOnDivergedMetadata Whether to fail the build if metadata diverges from implementations
      */
     public RuleStubGenerator(String basePackage, String outputDirectory, List<String> ruleSetPaths, 
-            boolean overwriteExisting, String contextKeyEnum) {
+            boolean overwriteExisting, String contextKeyEnum, boolean failBuildOnDivergedMetadata) {
         this.basePackage = basePackage;
         this.outputDirectory = outputDirectory;
         this.ruleSetPaths = ruleSetPaths;
         this.overwriteExisting = overwriteExisting;
         this.contextKeyEnum = contextKeyEnum;
+        this.failBuildOnDivergedMetadata = failBuildOnDivergedMetadata;
     }
     
     /**
      * Generates Java stubs for all business checks and actions found in the configured rule sets.
+     * Also performs cross-check validation if configured.
      *
      * @return The number of files generated
      * @throws IOException If an error occurs while writing files
+     * @throws IllegalStateException If divergence is found when failBuildOnDivergedMetadata is true
      */
-    public int generateStubs() throws IOException {
+    public int generateStubs() throws IOException, IllegalStateException {
+        if (failBuildOnDivergedMetadata) {
+            LOGGER.info("Cross-checking rule implementations against metadata...");
+            MetadataCrossChecker crossChecker = new MetadataCrossChecker(basePackage, outputDirectory, ruleSetPaths);
+            crossChecker.crossCheck();
+            LOGGER.info("Metadata cross-check completed successfully.");
+        }
+        
         int totalFilesGenerated = 0;
         
         for (String ruleSetPath : ruleSetPaths) {
@@ -292,6 +304,7 @@ public class RuleStubGenerator {
         private final List<String> ruleSetPaths = new ArrayList<>();
         private boolean overwriteExisting = false;
         private String contextKeyEnum;
+        private boolean failBuildOnDivergedMetadata = true;
         
         private Builder() {
         }
@@ -335,6 +348,14 @@ public class RuleStubGenerator {
             this.contextKeyEnum = contextKeyEnum;
             return this;
         }
+
+        /**
+         * Sets whether to fail the build on diverged metadata.
+         */
+        public Builder failBuildOnDivergedMetadata(boolean failBuild) {
+            this.failBuildOnDivergedMetadata = failBuild;
+            return this;
+        }
         
         /**
          * Builds the RuleStubGenerator.
@@ -347,7 +368,7 @@ public class RuleStubGenerator {
                 outputDir = "target/generated-sources/axiom";
             }
             
-            return new RuleStubGenerator(basePackage, outputDir, ruleSetPaths, overwriteExisting, contextKeyEnum);
+            return new RuleStubGenerator(basePackage, outputDir, ruleSetPaths, overwriteExisting, contextKeyEnum, failBuildOnDivergedMetadata);
         }
         
         /**
@@ -375,6 +396,7 @@ public class RuleStubGenerator {
         List<String> ruleSets = new ArrayList<>();
         boolean overwriteExisting = false;
         String contextKeyEnum = null;
+        boolean failBuildOnDivergedMetadata = true;
         
         // Parse command line arguments
         for (String arg : args) {
@@ -388,6 +410,8 @@ public class RuleStubGenerator {
                 overwriteExisting = Boolean.parseBoolean(arg.substring("--overwriteExisting=".length()));
             } else if (arg.startsWith("--contextKeyEnum=")) {
                 contextKeyEnum = arg.substring("--contextKeyEnum=".length());
+            } else if (arg.startsWith("--failBuildOnDivergedMetadata=")) {
+                failBuildOnDivergedMetadata = Boolean.parseBoolean(arg.substring("--failBuildOnDivergedMetadata=".length()));
             }
         }
         
@@ -408,7 +432,8 @@ public class RuleStubGenerator {
             Builder builder = builder()
                 .withBasePackage(basePackage)
                 .withOutputDirectory(outputDirectory)
-                .overwriteExisting(overwriteExisting);
+                .overwriteExisting(overwriteExisting)
+                .failBuildOnDivergedMetadata(failBuildOnDivergedMetadata);
             
             if (contextKeyEnum != null) {
                 builder.withContextKeyEnum(contextKeyEnum);
@@ -438,5 +463,6 @@ public class RuleStubGenerator {
         System.err.println("  --ruleSet=<path>                Path to rule set YAML file (can be specified multiple times)");
         System.err.println("  --overwriteExisting=<true|false> Whether to overwrite existing files (default: false)");
         System.err.println("  --contextKeyEnum=<enum>          Fully qualified name of the context enum class (e.g., com.company.ContextKey)");
+        System.err.println("  --failBuildOnDivergedMetadata=<true|false> Whether to fail if metadata diverges (default: true)");
     }
 } 

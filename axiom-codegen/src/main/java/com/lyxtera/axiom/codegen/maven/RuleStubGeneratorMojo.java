@@ -39,15 +39,15 @@ public class RuleStubGeneratorMojo extends AbstractMojo {
     private String packageName;
 
     /**
-     * The comma-separated ruleset YAML files to process.
+     * The ruleset YAML files to process. Using nested tags (e.g., &lt;ruleSets&gt;&lt;ruleSet&gt;...&lt;/ruleSet&gt;&lt;/ruleSets&gt;).
      */
     @Parameter(property = "axiom.stubs.ruleSets", required = true)
-    private String ruleSets;
+    private List<String> ruleSets;
 
     /**
      * Directory to output generated sources to.
      */
-    @Parameter(property = "axiom.stubs.outputDirectory", defaultValue = "${project.build.directory}/generated-sources/axiom")
+    @Parameter(property = "axiom.stubs.outputDirectory", defaultValue = "${project.basedir}/src/main/java")
     private File outputDirectory;
 
     /**
@@ -62,6 +62,12 @@ public class RuleStubGeneratorMojo extends AbstractMojo {
     @Parameter(property = "axiom.stubs.contextKeyEnum", required = true)
     private String contextKeyEnum;
 
+    /**
+     * Fail the build if the ruleset metadata diverges from the code implementation.
+     */
+    @Parameter(property = "axiom.stubs.failBuildOnDivergedMetadata", defaultValue = "true")
+    private boolean failBuildOnDivergedMetadata;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         if (skip) {
@@ -74,17 +80,20 @@ public class RuleStubGeneratorMojo extends AbstractMojo {
         getLog().info("Output directory: " + outputDirectory);
         getLog().info("Overwrite existing: " + overwriteExisting);
         getLog().info("Context key enum: " + contextKeyEnum);
+        getLog().info("Fail build on diverged metadata: " + failBuildOnDivergedMetadata);
         
-        // Parse the ruleSets parameter into a list of paths
+        // Populate the ruleSetPaths list
         List<String> ruleSetPaths = new ArrayList<>();
-        for (String ruleSetPath : ruleSets.split(",")) {
-            String trimmedPath = ruleSetPath.trim();
-            File ruleSetFile = new File(trimmedPath);
-            if (!ruleSetFile.exists()) {
-                getLog().warn("Rule set file does not exist: " + ruleSetFile);
-                continue;
+        if (ruleSets != null) {
+            for (String ruleSetPath : ruleSets) {
+                String trimmedPath = ruleSetPath.trim();
+                File ruleSetFile = new File(trimmedPath);
+                if (!ruleSetFile.exists()) {
+                    getLog().warn("Rule set file does not exist: " + ruleSetFile);
+                    continue;
+                }
+                ruleSetPaths.add(trimmedPath);
             }
-            ruleSetPaths.add(trimmedPath);
         }
         
         if (ruleSetPaths.isEmpty()) {
@@ -104,7 +113,8 @@ public class RuleStubGeneratorMojo extends AbstractMojo {
                     outputDirectory.getAbsolutePath(), 
                     ruleSetPaths, 
                     overwriteExisting,
-                    contextKeyEnum);
+                    contextKeyEnum,
+                    failBuildOnDivergedMetadata);
             
             // Generate stubs
             int filesGenerated = generator.generateStubs();

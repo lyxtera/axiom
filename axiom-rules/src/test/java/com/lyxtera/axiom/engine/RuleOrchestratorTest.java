@@ -19,10 +19,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.lyxtera.axiom.api.exception.AxiomEngineException;
+import com.lyxtera.axiom.api.exception.DynamicRuleValidationException;
 import com.lyxtera.axiom.api.model.BusinessRule;
 import com.lyxtera.axiom.api.model.Condition;
+import com.lyxtera.axiom.api.model.DynamicRuleRequest;
 import com.lyxtera.axiom.api.model.Expression;
 import com.lyxtera.axiom.api.model.RuleFunction;
+import com.lyxtera.axiom.api.model.RuleSetDescriptor.BusinessActionDescriptor;
+import com.lyxtera.axiom.api.parser.Parser;
 
 class RuleOrchestratorTest {
 
@@ -307,8 +311,138 @@ class RuleOrchestratorTest {
         assertThat(result.getExecutedRules()).containsKeys(parentActionRule, childActionRule);
     }
     
+    // ===== Dynamic Rule Tests =====
+
+    @Test
+    void testExecuteDynamicRules_ThrowsWhenNoParser() {
+        // Create an orchestrator without a parser
+        RuleOrchestrator<TestKey> orchestrator = new RuleOrchestrator<>(ruleSet);
+        
+        assertThatThrownBy(() -> orchestrator.executeDynamicRules(
+                context, List.of("expr"), "testEntity"))
+            .isInstanceOf(DynamicRuleValidationException.class)
+            .hasMessageContaining("Parser not available");
+    }
+    
+    @Test
+    void testExecuteDynamicRuleSet_ThrowsWhenNoParser() {
+        // Create an orchestrator without a parser
+        RuleOrchestrator<TestKey> orchestrator = new RuleOrchestrator<>(ruleSet);
+        DynamicRuleRequest<TestKey> request = new DynamicRuleRequest<>(
+            "testEntity", "TestRuleSet", List.of("expr"));
+        
+        assertThatThrownBy(() -> orchestrator.executeDynamicRuleSet(context, request))
+            .isInstanceOf(DynamicRuleValidationException.class)
+            .hasMessageContaining("Parser not available");
+    }
+    
+    @Test
+    void testExecuteDynamicRuleSet_ThrowsForNullRequest() {
+        @SuppressWarnings("unchecked")
+        Parser<TestKey> mockParser = mock(Parser.class);
+        RuleOrchestrator<TestKey> orchestrator = new RuleOrchestrator<>(ruleSet, mockParser);
+        
+        assertThatThrownBy(() -> orchestrator.executeDynamicRuleSet(context, null))
+            .isInstanceOf(DynamicRuleValidationException.class)
+            .hasMessageContaining("cannot be null");
+    }
+    
+    @Test
+    void testExecuteDynamicRuleSet_ThrowsForInvalidRequest() {
+        @SuppressWarnings("unchecked")
+        Parser<TestKey> mockParser = mock(Parser.class);
+        RuleOrchestrator<TestKey> orchestrator = new RuleOrchestrator<>(ruleSet, mockParser);
+        
+        // Empty entity name makes the request invalid
+        DynamicRuleRequest<TestKey> request = new DynamicRuleRequest<>(
+            "", "TestRuleSet", List.of("expr"));
+        
+        assertThatThrownBy(() -> orchestrator.executeDynamicRuleSet(context, request))
+            .isInstanceOf(DynamicRuleValidationException.class)
+            .hasMessageContaining("Invalid dynamic rule request");
+    }
+    
+    @Test
+    void testExecuteDynamicRuleSet_ThrowsForRulesetNameMismatch() {
+        @SuppressWarnings("unchecked")
+        Parser<TestKey> mockParser = mock(Parser.class);
+        
+        // Use a fresh ruleset instead of the one from setUp to avoid action name validation on mock rules
+        RuleSet<TestKey> freshRuleSet = new RuleSet<>();
+        RuleSet.Metadata metadata = new RuleSet.Metadata();
+        metadata.setRuleSetName("CorrectRulesetName");
+        
+        // Add a descriptor for the action in currentRule to pass validation
+        BusinessActionDescriptor actionDescriptor = new BusinessActionDescriptor();
+        actionDescriptor.setName("action1");
+        metadata.setBusinessActionDescriptors(List.of(actionDescriptor));
+        
+        freshRuleSet.setMetadata(metadata);
+        
+        // Add a rule to pass "Rule set is empty" validation
+        BusinessRule<TestKey> currentRule = createMockRule("Rule1", (RuleContext<TestKey> ctx) -> true);
+        RuleFunction<TestKey> action = currentRule.getActions().get(0);
+        when(action.getName()).thenReturn("action1");
+        freshRuleSet.addRule(currentRule, 1, java.time.ZonedDateTime.now());
+        
+        RuleOrchestrator<TestKey> orchestrator = new RuleOrchestrator<>(freshRuleSet, mockParser);
+        
+        // Request targets a different ruleset than the orchestrator's
+        DynamicRuleRequest<TestKey> request = new DynamicRuleRequest<>(
+            "testEntity", "WrongRulesetName", List.of("expr"));
+        
+        assertThatThrownBy(() -> orchestrator.executeDynamicRuleSet(context, request))
+            .isInstanceOf(DynamicRuleValidationException.class)
+            .hasMessageContaining("does not match");
+    }
+    
+    @Test
+    void testExecuteDynamicRuleSet_ThrowsWhenDynamicExecutionNotAllowed() {
+        @SuppressWarnings("unchecked")
+        Parser<TestKey> mockParser = mock(Parser.class);
+        
+        // Create a ruleset with dynamic execution disabled (default)
+        RuleSet<TestKey> dynamicRuleSet = new RuleSet<>();
+        RuleSet.Metadata metadata = new RuleSet.Metadata();
+        metadata.setRuleSetName("TestRuleSet");
+        metadata.setAllowDynamicExecution(false);
+        
+        // Add a descriptor for the action in rule1 to pass validation
+        BusinessActionDescriptor actionDescriptor = new BusinessActionDescriptor();
+        actionDescriptor.setName("action1");
+        metadata.setBusinessActionDescriptors(List.of(actionDescriptor));
+        
+        dynamicRuleSet.setMetadata(metadata);
+        
+        // Make rule1's action have a matching name
+        BusinessRule<TestKey> dynamicRule = createMockRule("Rule1", (RuleContext<TestKey> ctx) -> true);
+        RuleFunction<TestKey> action = dynamicRule.getActions().get(0);
+        when(action.getName()).thenReturn("action1");
+        
+        dynamicRuleSet.addRule(dynamicRule, 10, java.time.ZonedDateTime.now());
+        
+        RuleOrchestrator<TestKey> orchestrator = new RuleOrchestrator<>(dynamicRuleSet, mockParser);
+        
+        DynamicRuleRequest<TestKey> request = new DynamicRuleRequest<>(
+            "testEntity", "TestRuleSet", List.of("expr"));
+        
+        assertThatThrownBy(() -> orchestrator.executeDynamicRuleSet(context, request))
+            .isInstanceOf(DynamicRuleValidationException.class)
+            .hasMessageContaining("does not allow dynamic rule execution");
+    }
+    
+    @Test
+    void testConstructor_WithParser() {
+        @SuppressWarnings("unchecked")
+        Parser<TestKey> mockParser = mock(Parser.class);
+        RuleOrchestrator<TestKey> orchestrator = new RuleOrchestrator<>(ruleSet, mockParser);
+        
+        assertThat(orchestrator.getRuleSet()).isEqualTo(ruleSet);
+    }
+
     // Helper method to create a mock rule
     private BusinessRule<TestKey> createMockRule(String name, Expression<TestKey> condition) {
+
         @SuppressWarnings("unchecked")
         BusinessRule<TestKey> rule = mock(BusinessRule.class);
         when(rule.getName()).thenReturn(name);

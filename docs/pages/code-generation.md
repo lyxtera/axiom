@@ -28,9 +28,12 @@ To use the axiom-codegen plugin in your project, add the following configuration
             <configuration>
                 <packageName>com.example.rules</packageName>
                 <contextKeyEnum>com.example.rules.MyContextKey</contextKeyEnum>
-                <ruleSets>${project.basedir}/src/main/resources/my_ruleset.yaml</ruleSets>
-                <outputDirectory>src/main/java/</outputDirectory>
+                <ruleSets>
+                    <ruleSet>${project.basedir}/src/main/resources/my_ruleset.yaml</ruleSet>
+                </ruleSets>
+                <outputDirectory>${project.basedir}/src/main/java</outputDirectory>
                 <overwriteExisting>true</overwriteExisting>
+                <failBuildOnDivergedMetadata>true</failBuildOnDivergedMetadata>
                 <skip>false</skip>
             </configuration>
         </execution>
@@ -46,9 +49,10 @@ The plugin accepts the following configuration parameters:
 |-----------|----------|-------------|---------|----------|
 | `packageName` | `axiom.stubs.package` | Base package for generated classes | - | Yes |
 | `contextKeyEnum` | `axiom.stubs.contextKeyEnum` | Fully qualified name of the context enum class | - | Yes |
-| `ruleSets` | `axiom.stubs.ruleSets` | Comma-separated list of rule set YAML files to process | - | Yes |
-| `outputDirectory` | `axiom.stubs.outputDirectory` | Directory to output generated sources to | `${project.build.directory}/generated-sources/axiom` | No |
+| `ruleSets` | `axiom.stubs.ruleSets` | List of rule set YAML files to process | - | Yes |
+| `outputDirectory` | `axiom.stubs.outputDirectory` | Directory to output generated sources to | `${project.basedir}/src/main/java` | No |
 | `overwriteExisting` | `axiom.stubs.overwriteExisting` | Whether to overwrite existing files | `false` | No |
+| `failBuildOnDivergedMetadata` | `axiom.stubs.failBuildOnDivergedMetadata` | Fails the build if rulesets diverge from code implementation | `true` | No |
 | `skip` | `axiom.stubs.skip` | Skip the rule stub generation | `false` | No |
 
 ### Example Configuration
@@ -70,9 +74,12 @@ Here's a complete example from the `axiom-examples` project:
             <configuration>
                 <packageName>com.lyxtera.axiom.examples.rules</packageName>
                 <contextKeyEnum>com.lyxtera.axiom.examples.rules.CustomerContextKey</contextKeyEnum>
-                <ruleSets>${project.basedir}/src/main/resources/customer_discount_ruleset.yaml</ruleSets>
-                <outputDirectory>src/main/java/</outputDirectory>
+                <ruleSets>
+                    <ruleSet>${project.basedir}/src/main/resources/customer_discount_ruleset.yaml</ruleSet>
+                </ruleSets>
+                <outputDirectory>${project.basedir}/src/main/java</outputDirectory>
                 <overwriteExisting>true</overwriteExisting>
+                <failBuildOnDivergedMetadata>true</failBuildOnDivergedMetadata>
                 <skip>false</skip>
             </configuration>
         </execution>

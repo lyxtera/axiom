@@ -14,7 +14,10 @@ import org.junit.jupiter.api.Test;
 
 import com.lyxtera.axiom.api.exception.RuleFunctionException;
 import com.lyxtera.axiom.api.model.BusinessAction;
+import com.lyxtera.axiom.api.model.BusinessCheck;
 import com.lyxtera.axiom.api.model.RuleFunction;
+import com.lyxtera.axiom.api.model.RuleSetDescriptor.BusinessActionDescriptor;
+import com.lyxtera.axiom.api.model.RuleSetDescriptor.BusinessCheckDescriptor;
 import com.lyxtera.axiom.api.model.Value;
 import com.lyxtera.axiom.config.Arg;
 import com.lyxtera.axiom.config.RuleMetadata;
@@ -129,10 +132,71 @@ class ArgAwareRuleFunctionTest {
             .isInstanceOf(NullPointerException.class)
             .hasMessageContaining("Metadata cannot be null");
     }
+    @Test
+    void testExecute_WithWrongArgCountThrowsDetailedBusinessCheckError() {
+        // Create a BusinessCheck delegate with no @Arg-annotated execute method for 2 args
+        BusinessCheck<TestKey> delegate = new NoArgCheckFunction();
+        
+        // Create metadata with a check descriptor that expects 2 params
+        BusinessCheckDescriptor checkDescriptor = new BusinessCheckDescriptor();
+        checkDescriptor.setName("noArgCheckFunction");
+        checkDescriptor.setDescription("A check with no params");
+        checkDescriptor.setParams(List.of("param1", "param2"));
+        metadata.setBusinessCheckDescriptors(List.of(checkDescriptor));
+        
+        // Create a function with 2 args — but the delegate only has execute(ctx)
+        // This will cause findExecuteMethod to fail since no matching signature exists
+        assertThatThrownBy(() -> ArgAwareRuleFunction.of(
+                delegate, List.of(Value.of("a"), Value.of("b")), metadata))
+            .isInstanceOf(RuleFunctionException.class)
+            .hasMessageContaining("Method not found");
+    }
+    
+    @Test
+    void testExecute_WithWrongArgCountThrowsDetailedBusinessActionError() {
+        // Create a BusinessAction delegate with no @Arg-annotated execute method for 2 args
+        BusinessAction<TestKey> delegate = new NoArgsFunction();
+        
+        // Create metadata with an action descriptor that expects 2 params
+        BusinessActionDescriptor actionDescriptor = new BusinessActionDescriptor();
+        actionDescriptor.setName("noArgsFunction");
+        actionDescriptor.setDescription("An action with no params");
+        actionDescriptor.setParams(List.of("param1", "param2"));
+        metadata.setBusinessActionDescriptors(List.of(actionDescriptor));
+        
+        // This will cause findExecuteMethod to fail since no matching signature exists
+        assertThatThrownBy(() -> ArgAwareRuleFunction.of(
+                delegate, List.of(Value.of("a"), Value.of("b")), metadata))
+            .isInstanceOf(RuleFunctionException.class)
+            .hasMessageContaining("Method not found");
+    }
+    
+    @Test
+    void testExecute_FailsWithDescriptiveMessageWhenNoMatchingMethod() {
+        // Create a delegate that only has the base execute(ctx) method
+        NoArgsFunction delegate = new NoArgsFunction();
+        
+        // Try to create with 3 args — no overloaded method with 3 Value params exists
+        assertThatThrownBy(() -> ArgAwareRuleFunction.of(
+                delegate, List.of(Value.of("a"), Value.of("b"), Value.of("c")), metadata))
+            .isInstanceOf(RuleFunctionException.class)
+            .hasMessageContaining("Method not found")
+            .hasMessageContaining("Expected signature")
+            .hasMessageContaining("execute");
+    }
     
     // Test function implementations
     
+    @RuleMetadata(name = "noArgCheckFunction", description = "Test check with no arguments")
+    private static class NoArgCheckFunction implements BusinessCheck<TestKey> {
+        @Override
+        public Value execute(RuleContext<TestKey> context) {
+            return Value.of(true);
+        }
+    }
+    
     @RuleMetadata(name = "noArgsFunction", description = "Test function with no arguments")
+
     private static class NoArgsFunction implements BusinessAction<TestKey> {
         @Override
         public Value execute(RuleContext<TestKey> context) {

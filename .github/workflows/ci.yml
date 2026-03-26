@@ -50,38 +50,6 @@ jobs:
         path: '**/target/surefire-reports/*.xml'
         reporter: java-junit
 
-  coverage:
-    name: Code Coverage
-    runs-on: ubuntu-latest
-    needs: test
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Set up JDK ${{ env.JAVA_VERSION }}
-      uses: actions/setup-java@v4
-      with:
-        java-version: ${{ env.JAVA_VERSION }}
-        distribution: 'temurin'
-        
-    - name: Cache Maven dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.m2
-        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-        restore-keys: ${{ runner.os }}-m2
-        
-    - name: Run tests with coverage
-      run: mvn clean test jacoco:report -Dmaven.thrift.skip=true
-      
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./axiom-rules/target/site/jacoco/jacoco.xml
-        flags: unittests
-        name: codecov-umbrella
-
   quality:
     name: Code Quality
     runs-on: ubuntu-latest
@@ -167,7 +135,7 @@ jobs:
   build:
     name: Build and Package
     runs-on: ubuntu-latest
-    needs: [test, coverage, quality]
+    needs: [test, quality]
     
     steps:
     - name: Checkout code

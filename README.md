@@ -1,8 +1,8 @@
 # Axiom - Lightweight Rule Engine for Java
 
 [![Build Status](https://github.com/lyxtera/axiom/actions/workflows/ci.yml/badge.svg)](https://github.com/lyxtera/axiom/actions/workflows/ci.yml)
-[![Test Coverage](https://img.shields.io/badge/coverage-70%25-brightgreen.svg)]()
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.lyxtera/axiom-parent/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.lyxtera/axiom-parent)
+[![Test Coverage](https://raw.githubusercontent.com/lyxtera/axiom/main/.github/badges/coverage.svg)](https://github.com/lyxtera/axiom/actions/workflows/ci.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/com.lyxtera/axiom-parent.svg)](https://central.sonatype.com/artifact/com.lyxtera/axiom-parent)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 Axiom is a lightweight rule engine designed to simplify complex "if-this-then-that" business logic in Java applications. It separates business rules from application code using YAML files and provides automatic code generation for type-safe rule implementation.
@@ -49,9 +49,12 @@ Add Axiom to your project:
                     <configuration>
                         <packageName>com.example.rules</packageName>
                         <contextKeyEnum>com.example.rules.MyContextKey</contextKeyEnum>
-                        <ruleSets>${project.basedir}/src/main/resources/my_rules.yaml</ruleSets>
-                        <outputDirectory>src/main/java/</outputDirectory>
+                        <ruleSets>
+                            <ruleSet>${project.basedir}/src/main/resources/my_rules.yaml</ruleSet>
+                        </ruleSets>
+                        <outputDirectory>${project.basedir}/src/main/java</outputDirectory>
                         <overwriteExisting>true</overwriteExisting>
+                        <failBuildOnDivergedMetadata>true</failBuildOnDivergedMetadata>
                     </configuration>
                 </execution>
             </executions>
@@ -261,9 +264,12 @@ The `axiom-codegen` Maven plugin generates type-safe stub classes:
     <configuration>
         <packageName>com.example.rules</packageName>
         <contextKeyEnum>com.example.rules.MyContextKey</contextKeyEnum>
-        <ruleSets>src/main/resources/rules.yaml</ruleSets>
-        <outputDirectory>src/main/java/</outputDirectory>
+        <ruleSets>
+            <ruleSet>src/main/resources/rules.yaml</ruleSet>
+        </ruleSets>
+        <outputDirectory>${project.basedir}/src/main/java</outputDirectory>
         <overwriteExisting>true</overwriteExisting>
+        <failBuildOnDivergedMetadata>true</failBuildOnDivergedMetadata>
         <skip>false</skip>
     </configuration>
 </plugin>
@@ -275,10 +281,11 @@ The `axiom-codegen` Maven plugin generates type-safe stub classes:
 |-----------|-------------|---------|----------|
 | `packageName` | Base package for generated classes | - | Yes |
 | `contextKeyEnum` | Fully qualified context enum class name | - | Yes |
-| `ruleSets` | Comma-separated list of rule YAML files | - | Yes |
-| `outputDirectory` | Output directory for generated sources | `target/generated-sources/axiom` | No |
+| `ruleSets` | List of rule YAML files | - | Yes |
+| `outputDirectory` | Output directory for generated sources | `${project.basedir}/src/main/java` | No |
 | `overwriteExisting` | Whether to overwrite existing files | `false` | No |
 | `skip` | Skip code generation | `false` | No |
+| `failBuildOnDivergedMetadata` | Fails the build if ruleset metadata diverges from code implementation | `true` | No |
 
 
 ### Writing Tests for Rules
@@ -295,6 +302,12 @@ void testCustomerDiscountRule() {
     assertThat(result.hasMatches()).isTrue();
     assertThat(context.getRequired(CustomerContextKey.HAS_DISCOUNT_APPLIED, Boolean.class)).isTrue();
 }
+```
+
+**Coverage badge (maintainers):** When test coverage changes meaningfully, refresh the badge from the repository root and commit [`.github/badges/coverage.svg`](.github/badges/coverage.svg) with your changes:
+
+```bash
+mvn -pl axiom-rules verify -Pcoverage-badge -Dmaven.thrift.skip=true
 ```
 
 ### Dynamic Rule Execution

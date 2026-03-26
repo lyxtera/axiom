@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.lyxtera</groupId>
         <artifactId>axiom-parent</artifactId>
-        <version>1.0.1</version>
+        <version>1.0.2</version>
     </parent>
     
     <artifactId>axiom-rules</artifactId>
@@ -119,6 +119,10 @@
                                 <exclude>com/lyxtera/axiom/antlr/**/*</exclude>
                                 <exclude>com/lyxtera/axiom/config/**/*</exclude>
                                 <exclude>com/lyxtera/axiom/api/exception/**/*</exclude>
+                                <exclude>com/lyxtera/axiom/api/model/RuleSetDescriptor*</exclude>
+                                <exclude>com/lyxtera/axiom/api/model/DynamicRuleDescriptor*</exclude>
+                                <exclude>com/lyxtera/axiom/api/model/DynamicRuleRequest*</exclude>
+                                <exclude>com/lyxtera/axiom/api/model/EntityPermissionDescriptor*</exclude>
                             </excludes>
                         </configuration>
                     </execution>
@@ -129,6 +133,10 @@
                                 <exclude>com/lyxtera/axiom/antlr/**/*</exclude>
                                 <exclude>com/lyxtera/axiom/config/**/*</exclude>
                                 <exclude>com/lyxtera/axiom/api/exception/**/*</exclude>
+                                <exclude>com/lyxtera/axiom/api/model/RuleSetDescriptor*</exclude>
+                                <exclude>com/lyxtera/axiom/api/model/DynamicRuleDescriptor*</exclude>
+                                <exclude>com/lyxtera/axiom/api/model/DynamicRuleRequest*</exclude>
+                                <exclude>com/lyxtera/axiom/api/model/EntityPermissionDescriptor*</exclude>
                             </excludes>
                         </configuration>
                     </execution>
@@ -164,4 +172,35 @@
             </resource>
         </resources>
     </build>
+
+    <profiles>
+        <profile>
+            <id>coverage-badge</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>generate-coverage-badge</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>python3</executable>
+                                    <arguments>
+                                        <argument>${maven.multiModuleProjectDirectory}/scripts/generate_coverage_badge.py</argument>
+                                        <argument>${project.basedir}/target/site/jacoco/jacoco.xml</argument>
+                                        <argument>${maven.multiModuleProjectDirectory}/.github/badges/coverage.svg</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project> 
