@@ -123,6 +123,7 @@
                                 <exclude>com/lyxtera/axiom/api/model/DynamicRuleDescriptor*</exclude>
                                 <exclude>com/lyxtera/axiom/api/model/DynamicRuleRequest*</exclude>
                                 <exclude>com/lyxtera/axiom/api/model/EntityPermissionDescriptor*</exclude>
+                                <exclude>com/lyxtera/axiom/api/validation/PermissionValidationResult$PermissionViolation*</exclude>
                             </excludes>
                         </configuration>
                     </execution>
@@ -137,6 +138,7 @@
                                 <exclude>com/lyxtera/axiom/api/model/DynamicRuleDescriptor*</exclude>
                                 <exclude>com/lyxtera/axiom/api/model/DynamicRuleRequest*</exclude>
                                 <exclude>com/lyxtera/axiom/api/model/EntityPermissionDescriptor*</exclude>
+                                <exclude>com/lyxtera/axiom/api/validation/PermissionValidationResult$PermissionViolation*</exclude>
                             </excludes>
                         </configuration>
                     </execution>

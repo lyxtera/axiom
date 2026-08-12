@@ -110,6 +110,7 @@
                         <configuration>
                             <excludes>
                                 <exclude>com/lyxtera/axiom/codegen/maven/*</exclude>
+                                <exclude>com/lyxtera/axiom/codegen/*CodeMetadata*</exclude>
                             </excludes>
                         </configuration>
                     </execution>
@@ -118,6 +119,7 @@
                         <configuration>
                             <excludes>
                                 <exclude>com/lyxtera/axiom/codegen/maven/*</exclude>
+                                <exclude>com/lyxtera/axiom/codegen/*CodeMetadata*</exclude>
                             </excludes>
                             <rules>
                                 <rule>
